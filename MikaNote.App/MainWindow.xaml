@@ -1,0 +1,564 @@
+<Window x:Class="MikaNote.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MikaNote Manager"
+        Width="1260"
+        Height="760"
+        MinWidth="1080"
+        MinHeight="640"
+        WindowStartupLocation="CenterScreen"
+        Background="#F4F0E8">
+    <Window.Resources>
+        <Style x:Key="LeftPanelTabButtonStyle"
+               TargetType="Button">
+            <Setter Property="MinWidth"
+                    Value="84" />
+            <Setter Property="Height"
+                    Value="48" />
+            <Setter Property="Padding"
+                    Value="0" />
+            <Setter Property="Background"
+                    Value="#DDD6C8" />
+            <Setter Property="Foreground"
+                    Value="#6E6559" />
+            <Setter Property="BorderBrush"
+                    Value="Transparent" />
+            <Setter Property="BorderThickness"
+                    Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="12,12,0,0"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="RightPanelTabButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource LeftPanelTabButtonStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="12,12,0,0"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SelectedColorChipButtonStyle"
+               TargetType="Button">
+            <Setter Property="Width"
+                    Value="20" />
+            <Setter Property="Height"
+                    Value="20" />
+            <Setter Property="Margin"
+                    Value="0,0,6,6" />
+            <Setter Property="Padding"
+                    Value="0" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="BorderBrush"
+                    Value="#CDC5B8" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="TileTemplate">
+            <Button Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Tag="{Binding}"
+                    Click="TileButton_Click">
+                <Border Width="150"
+                        Height="150"
+                        Background="{Binding BackgroundBrush}"
+                        CornerRadius="{Binding CornerRadius}"
+                        Padding="12">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="BorderBrush" Value="#D9D1C5" />
+                            <Setter Property="BorderThickness" Value="1" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSelected}"
+                                             Value="True">
+                                    <Setter Property="BorderBrush" Value="#2E2A24" />
+                                    <Setter Property="BorderThickness" Value="2" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock x:Name="TileTitleText"
+                                   FontWeight="SemiBold"
+                                   FontSize="{Binding TitleFontSize}"
+                                   LineHeight="{Binding TitleLineHeight}"
+                                   Foreground="{Binding TitleBrush}"
+                                   Text="{Binding Title}"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <TextBlock x:Name="TilePreviewText"
+                                   Grid.Row="1"
+                                   Margin="0,10,0,0"
+                                   VerticalAlignment="Top"
+                                   Text="{Binding PreviewText}"
+                                   FontSize="{Binding ContentFontSize}"
+                                   Foreground="{Binding ContentBrush}"
+                                   TextWrapping="Wrap"
+                                   LineHeight="{Binding ContentLineHeight}" />
+
+                        <TextBlock x:Name="TileCreatedText"
+                                   Grid.Row="2"
+                                   Margin="0,8,0,0"
+                                   HorizontalAlignment="Right"
+                                   FontSize="10"
+                                   Foreground="{Binding ContentBrush}"
+                                   Opacity="0.82"
+                                   Text="{Binding RelativeTimeText}" />
+
+                        <StackPanel x:Name="ActionContent"
+                                    Grid.RowSpan="3"
+                                    Visibility="Collapsed"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                            <TextBlock HorizontalAlignment="Center"
+                                       FontFamily="{Binding ActionGlyphFontFamily}"
+                                       FontSize="{Binding ActionGlyphFontSize}"
+                                       FontWeight="Light"
+                                       Foreground="{Binding ContentBrush}"
+                                       Text="{Binding ActionGlyph}" />
+                            <TextBlock Margin="0,6,0,0"
+                                       HorizontalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding ContentBrush}"
+                                       Text="{Binding ActionLabel}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Button>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsAction}"
+                             Value="True">
+                    <Setter TargetName="ActionContent"
+                            Property="Visibility"
+                            Value="Visible" />
+                    <Setter TargetName="TileTitleText"
+                            Property="Visibility"
+                            Value="Collapsed" />
+                    <Setter TargetName="TilePreviewText"
+                            Property="Visibility"
+                            Value="Collapsed" />
+                    <Setter TargetName="TileCreatedText"
+                            Property="Visibility"
+                            Value="Collapsed" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="5*" />
+            <ColumnDefinition Width="18" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0"
+                Background="#FFFDF7"
+                BorderBrush="#D9D1C5"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Margin="0,0,0,12">
+                    <TextBlock FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="#2E2A24"
+                               Text="Notes" />
+                    <TextBlock Margin="0,4,0,0"
+                               Foreground="#6B6255"
+                               Text="Todo, sticky, then trash notes." />
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#2E2A24"
+                                   Text="Todo" />
+                        <ItemsControl x:Name="TodoTilesItemsControl"
+                                      Margin="0,10,0,18"
+                                      ItemTemplate="{StaticResource TileTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Margin" Value="0,0,14,14" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                        </ItemsControl>
+
+                        <TextBlock FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#2E2A24"
+                                   Text="Memo" />
+                        <ItemsControl x:Name="MemoTilesItemsControl"
+                                      Margin="0,10,0,18"
+                                      ItemTemplate="{StaticResource TileTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Margin" Value="0,0,14,14" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                        </ItemsControl>
+
+                        <TextBlock FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#2E2A24"
+                                   Text="Trash" />
+                        <ItemsControl x:Name="BackupTilesItemsControl"
+                                      Margin="0,10,0,0"
+                                      ItemTemplate="{StaticResource TileTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Margin" Value="0,0,14,14" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <Border Grid.Column="2"
+                Background="#FFFDF7"
+                BorderBrush="#D9D1C5"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Border Height="48"
+                            Background="#DDD6C8"
+                            CornerRadius="12,12,0,0" />
+
+                    <Grid Margin="0,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button x:Name="SelectedNoteTabButton"
+                                Style="{StaticResource LeftPanelTabButtonStyle}"
+                                Grid.Column="0"
+                                HorizontalAlignment="Stretch"
+                                ToolTip="Selected Note"
+                                Click="SelectedNoteTabButton_Click">
+                            <Grid Width="24"
+                                  Height="24">
+                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                      StrokeThickness="1.7"
+                                      StrokeLineJoin="Round"
+                                      Data="M5,3 H14 L19,8 V21 H5 Z M14,3 V8 H19" />
+                            </Grid>
+                        </Button>
+                        <Button x:Name="GlobalSettingsTabButton"
+                                Style="{StaticResource RightPanelTabButtonStyle}"
+                                Grid.Column="1"
+                                Margin="0,0,0,0"
+                                HorizontalAlignment="Stretch"
+                                ToolTip="Global Note Settings"
+                                Click="GlobalSettingsTabButton_Click">
+                            <Grid Width="24"
+                                  Height="24">
+                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                      StrokeThickness="1.8"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M4,6 H20 M4,12 H20 M4,18 H20" />
+                                <Ellipse Width="6"
+                                         Height="6"
+                                         Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                         HorizontalAlignment="Left"
+                                         Margin="12,3,0,0"
+                                         VerticalAlignment="Top" />
+                                <Ellipse Width="6"
+                                         Height="6"
+                                         Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                         HorizontalAlignment="Left"
+                                         Margin="6,9,0,0"
+                                         VerticalAlignment="Top" />
+                                <Ellipse Width="6"
+                                         Height="6"
+                                         Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                         HorizontalAlignment="Left"
+                                         Margin="15,15,0,0"
+                                         VerticalAlignment="Top" />
+                            </Grid>
+                        </Button>
+                    </Grid>
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <Grid x:Name="SelectedNotePanel"
+                          Margin="16,16,16,16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0"
+                                    Margin="0,0,0,14">
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#2E2A24"
+                                       Text="Selected Note" />
+                            <TextBlock x:Name="SelectedMetaTextBlock"
+                                       Margin="0,4,0,0"
+                                       Foreground="#6B6255"
+                                       Text="Select a note tile." />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1"
+                                    Margin="0,0,0,14">
+                            <TextBlock Margin="0,0,0,6"
+                                       FontWeight="SemiBold"
+                                       Text="Background" />
+                            <WrapPanel x:Name="SelectedBackgroundPresetPanel" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2"
+                                    Margin="0,0,0,14">
+                            <TextBlock Margin="0,0,0,6"
+                                       FontWeight="SemiBold"
+                                       Text="Name" />
+                            <TextBlock x:Name="SelectedTitleTextBlock"
+                                       TextWrapping="Wrap"
+                                       Foreground="#2E2A24"
+                                       Text="-" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="3"
+                                    Margin="0,0,0,14">
+                            <TextBlock Margin="0,0,0,6"
+                                       FontWeight="SemiBold"
+                                       Text="Content" />
+                            <Border x:Name="SelectedPreviewBorder"
+                                    BorderBrush="#CFC7BB"
+                                    BorderThickness="1"
+                                    Background="White">
+                                <ScrollViewer x:Name="SelectedPreviewScrollViewer"
+                                              VerticalScrollBarVisibility="Visible"
+                                              HorizontalScrollBarVisibility="Disabled"
+                                              Padding="8,6">
+                                    <TextBlock x:Name="SelectedPreviewTextBlock"
+                                               TextWrapping="Wrap"
+                                               Foreground="#2E2A24" />
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="4"
+                                    Margin="0,0,0,14">
+                            <TextBlock Margin="0,0,0,6"
+                                       FontWeight="SemiBold"
+                                       Text="Modified" />
+                            <TextBlock x:Name="SelectedModifiedTextBlock"
+                                       Foreground="#6B6255"
+                                       Text="-" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="5"
+                                    Margin="0,0,0,14">
+                            <TextBlock Margin="0,0,0,6"
+                                       FontWeight="SemiBold"
+                                       Text="Created" />
+                            <TextBlock x:Name="SelectedCreatedTextBlock"
+                                       Foreground="#6B6255"
+                                       Text="-" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="6"
+                                    Margin="0,16,0,0">
+                            <Button x:Name="ToggleHiddenButton"
+                                    Height="36"
+                                    Margin="0,0,0,8"
+                                    Content="Hide Note"
+                                    Click="ToggleHiddenButton_Click" />
+                            <Button x:Name="DeleteNoteButton"
+                                    Height="36"
+                                    Margin="0,0,0,8"
+                                    Background="#B94A48"
+                                    Foreground="White"
+                                    Content="Delete Note"
+                                    Click="DeleteNoteButton_Click" />
+                            <Button x:Name="RestoreBackupButton"
+                                    Height="36"
+                                    Margin="0,0,0,8"
+                                    Visibility="Collapsed"
+                                    Content="Restore"
+                                    Click="RestoreBackupButton_Click" />
+                            <Button x:Name="DeleteBackupPermanentlyButton"
+                                    Height="36"
+                                    Visibility="Collapsed"
+                                    Background="#8D2C2C"
+                                    Foreground="White"
+                                    Content="Delete Permanently"
+                                    Click="DeleteBackupPermanentlyButton_Click" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ScrollViewer x:Name="GlobalSettingsPanel"
+                                  Margin="16,16,16,16"
+                                  Visibility="Collapsed"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel>
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#2E2A24"
+                                       Text="Global Settings" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="#6B6255"
+                                       Text="These settings apply to every note." />
+
+                            <StackPanel Margin="0,16,0,0">
+                                <TextBlock Margin="0,0,0,6"
+                                           FontWeight="SemiBold"
+                                           Text="Title Font Size" />
+                                <ComboBox x:Name="GlobalTitleFontSizeComboBox"
+                                          Height="34"
+                                          DisplayMemberPath="Label"
+                                          SelectedValuePath="Value"
+                                          SelectionChanged="GlobalFontSetting_Changed" />
+                            </StackPanel>
+
+                            <StackPanel Margin="0,14,0,0">
+                                <TextBlock Margin="0,0,0,6"
+                                           FontWeight="SemiBold"
+                                           Text="Content Font Size" />
+                                <ComboBox x:Name="GlobalContentFontSizeComboBox"
+                                          Height="34"
+                                          DisplayMemberPath="Label"
+                                          SelectedValuePath="Value"
+                                          SelectionChanged="GlobalFontSetting_Changed" />
+                            </StackPanel>
+
+                            <StackPanel Margin="0,14,0,0">
+                                <TextBlock Margin="0,0,0,6"
+                                           FontWeight="SemiBold"
+                                           Text="Default Background" />
+                                <ComboBox x:Name="GlobalDefaultBackgroundColorComboBox"
+                                          Height="34"
+                                          DisplayMemberPath="Label"
+                                          SelectedValuePath="Value"
+                                          SelectionChanged="GlobalFontSetting_Changed" />
+                            </StackPanel>
+
+                            <StackPanel Margin="0,14,0,0">
+                                <TextBlock Margin="0,0,0,6"
+                                           FontWeight="SemiBold"
+                                           Text="Corner Radius" />
+                                <Slider x:Name="CornerRadiusSlider"
+                                        Minimum="0"
+                                        Maximum="30"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        ValueChanged="CornerRadiusSlider_ValueChanged" />
+                                <TextBlock x:Name="CornerRadiusValueTextBlock"
+                                           Margin="0,6,0,0"
+                                           HorizontalAlignment="Right"
+                                           FontWeight="SemiBold"
+                                           Foreground="#2E2A24"
+                                           Text="0" />
+                            </StackPanel>
+
+                            <StackPanel Margin="0,14,0,0">
+                                <TextBlock Margin="0,0,0,6"
+                                           FontWeight="SemiBold"
+                                           Text="Title Line Spacing" />
+                                <ComboBox x:Name="GlobalTitleLineSpacingComboBox"
+                                          Height="34"
+                                          DisplayMemberPath="Label"
+                                          SelectedValuePath="Value"
+                                          SelectionChanged="GlobalFontSetting_Changed" />
+                            </StackPanel>
+
+                            <StackPanel Margin="0,14,0,0">
+                                <TextBlock Margin="0,0,0,6"
+                                           FontWeight="SemiBold"
+                                           Text="Content Line Spacing" />
+                                <ComboBox x:Name="GlobalContentLineSpacingComboBox"
+                                          Height="34"
+                                          DisplayMemberPath="Label"
+                                          SelectedValuePath="Value"
+                                          SelectionChanged="GlobalFontSetting_Changed" />
+                            </StackPanel>
+
+                            <Button Margin="0,18,0,0"
+                                    Height="36"
+                                    Content="Open Notes Folder"
+                                    Click="OpenNotesFolderButton_Click" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

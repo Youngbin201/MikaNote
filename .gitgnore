@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.tmp
+*.log
+*.pdb
+installer/publish/
+installer/Output/
+temp_build/
