@@ -7,7 +7,8 @@
         MinWidth="1080"
         MinHeight="640"
         WindowStartupLocation="CenterScreen"
-        Background="#F4F0E8">
+        Background="#F4F1EA"
+        PreviewMouseLeftButtonDown="Window_PreviewMouseLeftButtonDown">
     <Window.Resources>
         <Style x:Key="LeftPanelTabButtonStyle"
                TargetType="Button">
@@ -18,7 +19,7 @@
             <Setter Property="Padding"
                     Value="0" />
             <Setter Property="Background"
-                    Value="#DDD6C8" />
+                    Value="#D8D0C3" />
             <Setter Property="Foreground"
                     Value="#6E6559" />
             <Setter Property="BorderBrush"
@@ -41,16 +42,300 @@
 
         <Style x:Key="RightPanelTabButtonStyle"
                TargetType="Button"
-               BasedOn="{StaticResource LeftPanelTabButtonStyle}">
+               BasedOn="{StaticResource LeftPanelTabButtonStyle}" />
+
+        <Style x:Key="PanelButtonStyle"
+               TargetType="Button">
+            <Setter Property="Height"
+                    Value="34" />
+            <Setter Property="Padding"
+                    Value="12,0" />
+            <Setter Property="Background"
+                    Value="#FAF7F0" />
+            <Setter Property="Foreground"
+                    Value="#2D3033" />
+            <Setter Property="BorderBrush"
+                    Value="#D8D0C3" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="FontWeight"
+                    Value="SemiBold" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="12,12,0,0"
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#FFFDF8" />
+                                <Setter TargetName="Root"
+                                        Property="BorderBrush"
+                                        Value="#D8D0C3" />
+                            </Trigger>
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#F2EEE5" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+                                <Setter TargetName="Root"
+                                        Property="Opacity"
+                                        Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DangerPanelButtonStyle"
+               TargetType="Button">
+            <Setter Property="Height"
+                    Value="34" />
+            <Setter Property="Padding"
+                    Value="12,0" />
+            <Setter Property="Background"
+                    Value="#B85A4E" />
+            <Setter Property="Foreground"
+                    Value="#FFFDF8" />
+            <Setter Property="BorderBrush"
+                    Value="#9E483D" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="FontWeight"
+                    Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#C36659" />
+                                <Setter TargetName="Root"
+                                        Property="BorderBrush"
+                                        Value="#A34D42" />
+                            </Trigger>
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#A84D41" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+                                <Setter TargetName="Root"
+                                        Property="Opacity"
+                                        Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ManagerComboBoxStyle"
+               TargetType="ComboBox">
+            <Setter Property="Height"
+                    Value="30" />
+            <Setter Property="Padding"
+                    Value="10,0,28,0" />
+            <Setter Property="Background"
+                    Value="#FAF7F0" />
+            <Setter Property="Foreground"
+                    Value="#2D3033" />
+            <Setter Property="BorderBrush"
+                    Value="#D8D0C3" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Background="{TemplateBinding Background}"
+                                          BorderBrush="{TemplateBinding BorderBrush}"
+                                          BorderThickness="{TemplateBinding BorderThickness}"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="Chrome"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="8">
+                                            <Path Width="8"
+                                                  Height="5"
+                                                  Margin="0,0,10,0"
+                                                  HorizontalAlignment="Right"
+                                                  VerticalAlignment="Center"
+                                                  Fill="#6E6559"
+                                                  Data="M0,0 L8,0 L4,5 Z" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver"
+                                                     Value="True">
+                                                <Setter TargetName="Chrome"
+                                                        Property="Background"
+                                                        Value="#FFFDF8" />
+                                                <Setter TargetName="Chrome"
+                                                        Property="BorderBrush"
+                                                        Value="#D8D0C3" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                              IsHitTestVisible="False" />
+
+                            <Popup x:Name="Popup"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   Placement="Bottom"
+                                   PopupAnimation="Fade">
+                                <Border MinWidth="{TemplateBinding ActualWidth}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        Margin="0,4,0,0"
+                                        Background="#FFFDF8"
+                                        BorderBrush="#D8D0C3"
+                                        BorderThickness="1"
+                                        CornerRadius="8">
+                                    <ScrollViewer Padding="2"
+                                                  CanContentScroll="True">
+                                        <ItemsPresenter />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ManagerSliderStyle"
+               TargetType="Slider">
+            <Setter Property="Height"
+                    Value="28" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Border Height="8"
+                                    VerticalAlignment="Center"
+                                    Background="#F2EEE5"
+                                    CornerRadius="4" />
+                            <Track x:Name="PART_Track"
+                                   VerticalAlignment="Center">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Height="8"
+                                                  Background="#D8D0C3"
+                                                  BorderThickness="0"
+                                                  IsTabStop="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="{TemplateBinding Background}"
+                                                        CornerRadius="4" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Height="8"
+                                                  Background="Transparent"
+                                                  BorderThickness="0"
+                                                  IsTabStop="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="{TemplateBinding Background}"
+                                                        CornerRadius="4" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="18"
+                                           Height="18">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="#FFFDF8"
+                                                        BorderBrush="#D8D0C3"
+                                                        BorderThickness="2"
+                                                        CornerRadius="9" />
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Padding"
+                    Value="10,5" />
+            <Setter Property="Foreground"
+                    Value="#2D3033" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ItemRoot"
+                                Margin="2"
+                                Padding="{TemplateBinding Padding}"
+                                Background="Transparent"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted"
+                                     Value="True">
+                                <Setter TargetName="ItemRoot"
+                                        Property="Background"
+                                        Value="#F4F1EA" />
+                            </Trigger>
+                            <Trigger Property="IsSelected"
+                                     Value="True">
+                                <Setter TargetName="ItemRoot"
+                                        Property="Background"
+                                        Value="#F2EEE5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -59,109 +344,563 @@
         <Style x:Key="SelectedColorChipButtonStyle"
                TargetType="Button">
             <Setter Property="Width"
-                    Value="20" />
+                    Value="22" />
             <Setter Property="Height"
-                    Value="20" />
+                    Value="22" />
             <Setter Property="Margin"
-                    Value="0,0,6,6" />
+                    Value="0,0,7,7" />
             <Setter Property="Padding"
                     Value="0" />
             <Setter Property="BorderThickness"
                     Value="1" />
             <Setter Property="BorderBrush"
-                    Value="#CDC5B8" />
+                    Value="#D8D0C3" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4"
+                                CornerRadius="7"
                                 SnapsToDevicePixels="True" />
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
+        <Style x:Key="InactiveDarknessPresetButtonStyle"
+               TargetType="Button">
+            <Setter Property="Width"
+                    Value="18" />
+            <Setter Property="Height"
+                    Value="18" />
+            <Setter Property="Margin"
+                    Value="0,0,8,0" />
+            <Setter Property="Padding"
+                    Value="0" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="BorderBrush"
+                    Value="#D8D0C3" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                SnapsToDevicePixels="True" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SortModeButtonStyle"
+               TargetType="Button">
+            <Setter Property="Height"
+                    Value="30" />
+            <Setter Property="MinWidth"
+                    Value="78" />
+            <Setter Property="Margin"
+                    Value="0,0,4,0" />
+            <Setter Property="Padding"
+                    Value="9,0,10,0" />
+            <Setter Property="Background"
+                    Value="#F4F1EA" />
+            <Setter Property="Foreground"
+                    Value="#5F574A" />
+            <Setter Property="BorderBrush"
+                    Value="#D8D0C3" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="FontWeight"
+                    Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#FAF7F0" />
+                            </Trigger>
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#FFFDF8" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+                                <Setter TargetName="Root"
+                                        Property="Opacity"
+                                        Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FilterModeButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource SortModeButtonStyle}">
+            <Setter Property="MinWidth"
+                    Value="64" />
+            <Setter Property="Padding"
+                    Value="9,0,10,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#FAF7F0" />
+                            </Trigger>
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#FFFDF8" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+                                <Setter TargetName="Root"
+                                        Property="Opacity"
+                                        Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FavoriteIconButtonStyle"
+               TargetType="Button">
+            <Setter Property="Width"
+                    Value="32" />
+            <Setter Property="Height"
+                    Value="32" />
+            <Setter Property="Padding"
+                    Value="0" />
+            <Setter Property="Background"
+                    Value="#FAF7F0" />
+            <Setter Property="Foreground"
+                    Value="#B08A38" />
+            <Setter Property="BorderBrush"
+                    Value="#D8D0C3" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#FFFDF8" />
+                            </Trigger>
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="#F2EEE5" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+                                <Setter TargetName="Root"
+                                        Property="Opacity"
+                                        Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SelectedReadOnlyScrollViewerStyle"
+               TargetType="ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility"
+                    Value="Hidden" />
+            <Setter Property="HorizontalScrollBarVisibility"
+                    Value="Disabled" />
+            <Setter Property="Padding"
+                    Value="0" />
+            <Setter Property="Background"
+                    Value="Transparent" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver"
+                         Value="True">
+                    <Setter Property="VerticalScrollBarVisibility"
+                            Value="Auto" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ScrollBarThumbStyle"
+               TargetType="Thumb">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SidebarVerticalScrollBarStyle"
+               TargetType="ScrollBar">
+            <Setter Property="Width"
+                    Value="11" />
+            <Setter Property="Background"
+                    Value="#F4F1EA" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Border Margin="0,2,0,2"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6">
+                            <Track x:Name="PART_Track"
+                                   IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Background="Transparent"
+                                                  BorderThickness="0"
+                                                  IsTabStop="False" />
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Background="#D8D0C3"
+                                           Margin="1"
+                                           Style="{StaticResource ScrollBarThumbStyle}" />
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Background="Transparent"
+                                                  BorderThickness="0"
+                                                  IsTabStop="False" />
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ContentVerticalScrollBarStyle"
+               TargetType="ScrollBar"
+               BasedOn="{StaticResource SidebarVerticalScrollBarStyle}">
+            <Setter Property="Width"
+                    Value="4" />
+            <Setter Property="Background"
+                    Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Border Margin="0,3,0,3"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="2">
+                            <Track x:Name="PART_Track"
+                                   IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Background="Transparent"
+                                                  BorderThickness="0"
+                                                  IsTabStop="False" />
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Background="#F2EEE5"
+                                           Margin="0"
+                                           Style="{StaticResource ScrollBarThumbStyle}" />
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Background="Transparent"
+                                                  BorderThickness="0"
+                                                  IsTabStop="False" />
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ManagerInlineEditorTextBoxStyle"
+               TargetType="TextBox">
+            <Setter Property="Padding"
+                    Value="9,7" />
+            <Setter Property="Background"
+                    Value="#FAF7F0" />
+            <Setter Property="Foreground"
+                    Value="#2E2A24" />
+            <Setter Property="BorderBrush"
+                    Value="#D8D0C3" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="AcceptsReturn"
+                    Value="True" />
+            <Setter Property="TextWrapping"
+                    Value="Wrap" />
+            <Setter Property="VerticalScrollBarVisibility"
+                    Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility"
+                    Value="Disabled" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <DataTemplate x:Key="TileTemplate">
-            <Button Padding="0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Tag="{Binding}"
-                    Click="TileButton_Click">
-                <Border Width="150"
+            <Grid x:Name="TileRoot"
+                  Width="150"
+                  Height="150">
+                <Button x:Name="TileButtonRoot"
+                        Width="150"
                         Height="150"
-                        Background="{Binding BackgroundBrush}"
-                        CornerRadius="{Binding CornerRadius}"
-                        Padding="12">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="BorderBrush" Value="#D9D1C5" />
-                            <Setter Property="BorderThickness" Value="1" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsSelected}"
-                                             Value="True">
-                                    <Setter Property="BorderBrush" Value="#2E2A24" />
-                                    <Setter Property="BorderThickness" Value="2" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
+                        Padding="0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        Tag="{Binding}"
+                        Click="TileButton_Click">
+                    <Border Background="{Binding BackgroundBrush}"
+                            CornerRadius="{Binding CornerRadius}"
+                            Padding="12">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="BorderBrush" Value="#D8D0C3" />
+                                <Setter Property="BorderThickness" Value="1" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected}"
+                                                 Value="True">
+                                        <Setter Property="BorderBrush" Value="#2E2A24" />
+                                        <Setter Property="BorderThickness" Value="2" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
 
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                        <TextBlock x:Name="TileTitleText"
-                                   FontWeight="SemiBold"
-                                   FontSize="{Binding TitleFontSize}"
-                                   LineHeight="{Binding TitleLineHeight}"
-                                   Foreground="{Binding TitleBrush}"
-                                   Text="{Binding Title}"
-                                   TextTrimming="CharacterEllipsis" />
-
-                        <TextBlock x:Name="TilePreviewText"
-                                   Grid.Row="1"
-                                   Margin="0,10,0,0"
-                                   VerticalAlignment="Top"
-                                   Text="{Binding PreviewText}"
-                                   FontSize="{Binding ContentFontSize}"
-                                   Foreground="{Binding ContentBrush}"
-                                   TextWrapping="Wrap"
-                                   LineHeight="{Binding ContentLineHeight}" />
-
-                        <TextBlock x:Name="TileCreatedText"
-                                   Grid.Row="2"
-                                   Margin="0,8,0,0"
-                                   HorizontalAlignment="Right"
-                                   FontSize="10"
-                                   Foreground="{Binding ContentBrush}"
-                                   Opacity="0.82"
-                                   Text="{Binding RelativeTimeText}" />
-
-                        <StackPanel x:Name="ActionContent"
-                                    Grid.RowSpan="3"
-                                    Visibility="Collapsed"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center">
-                            <TextBlock HorizontalAlignment="Center"
-                                       FontFamily="{Binding ActionGlyphFontFamily}"
-                                       FontSize="{Binding ActionGlyphFontSize}"
-                                       FontWeight="Light"
-                                       Foreground="{Binding ContentBrush}"
-                                       Text="{Binding ActionGlyph}" />
-                            <TextBlock Margin="0,6,0,0"
-                                       HorizontalAlignment="Center"
+                            <TextBlock x:Name="TileTitleText"
                                        FontWeight="SemiBold"
+                                       FontSize="{Binding TitleFontSize}"
+                                       LineHeight="{Binding TitleLineHeight}"
+                                       Foreground="{Binding TitleBrush}"
+                                       Text="{Binding Title}"
+                                       TextTrimming="CharacterEllipsis" />
+
+                            <TextBlock x:Name="TilePreviewText"
+                                       Grid.Row="1"
+                                       Margin="0,10,0,0"
+                                       VerticalAlignment="Top"
+                                       Text="{Binding PreviewText}"
+                                       FontSize="{Binding ContentFontSize}"
                                        Foreground="{Binding ContentBrush}"
-                                       Text="{Binding ActionLabel}" />
-                        </StackPanel>
+                                       TextWrapping="Wrap"
+                                       LineHeight="{Binding ContentLineHeight}" />
+
+                            <TextBlock x:Name="TileCreatedText"
+                                       Grid.Row="2"
+                                       Margin="0,8,0,0"
+                                       HorizontalAlignment="Right"
+                                       FontSize="10"
+                                       Foreground="{Binding ContentBrush}"
+                                       Opacity="0.82"
+                                       Text="{Binding RelativeTimeText}" />
+
+                            <StackPanel x:Name="ActionContent"
+                                        Grid.RowSpan="3"
+                                        Visibility="Collapsed"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <TextBlock HorizontalAlignment="Center"
+                                           FontFamily="{Binding ActionGlyphFontFamily}"
+                                           FontSize="{Binding ActionGlyphFontSize}"
+                                           FontWeight="Light"
+                                           Foreground="{Binding ContentBrush}"
+                                           Text="{Binding ActionGlyph}" />
+                                <TextBlock Margin="0,6,0,0"
+                                           HorizontalAlignment="Center"
+                                           FontWeight="SemiBold"
+                                           Foreground="{Binding ContentBrush}"
+                                           Text="{Binding ActionLabel}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Button>
+
+                <Button x:Name="TileFavoriteButton"
+                        Width="24"
+                        Height="24"
+                        Panel.ZIndex="2"
+                        Margin="0,6,6,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Padding="0"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="0"
+                        Focusable="False"
+                        Tag="{Binding}"
+                        ToolTip="Favorite note"
+                        Visibility="Collapsed"
+                        Click="TileFavoriteButton_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Root"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver"
+                                         Value="True">
+                                    <Setter TargetName="Root"
+                                            Property="Background"
+                                            Value="#FFFDF8" />
+                                </Trigger>
+                                <Trigger Property="IsPressed"
+                                         Value="True">
+                                    <Setter TargetName="Root"
+                                            Property="Background"
+                                            Value="#EFE4CE" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <Grid>
+                        <Path x:Name="TileFavoriteOutlineStar"
+                              Width="12"
+                              Height="12"
+                              Stretch="Fill"
+                              Stroke="#B08A38"
+                              StrokeThickness="1.35"
+                              StrokeLineJoin="Round"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              Data="M8,0.9 L10,5.2 L14.8,5.7 L11.2,8.9 L12.2,13.6 L8,11.2 L3.8,13.6 L4.8,8.9 L1.2,5.7 L6,5.2 Z" />
+                        <Path x:Name="TileFavoriteFilledStar"
+                              Width="12"
+                              Height="12"
+                              Stretch="Fill"
+                              Fill="#E1B751"
+                              Stroke="#B08A38"
+                              StrokeThickness="1"
+                              StrokeLineJoin="Round"
+                              Data="M8,0.9 L10,5.2 L14.8,5.7 L11.2,8.9 L12.2,13.6 L8,11.2 L3.8,13.6 L4.8,8.9 L1.2,5.7 L6,5.2 Z"
+                              Visibility="Collapsed" />
                     </Grid>
-                </Border>
-            </Button>
+                </Button>
+
+                <Button x:Name="TileDeleteButton"
+                        Width="24"
+                        Height="24"
+                        Panel.ZIndex="2"
+                        Margin="0,0,6,6"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Padding="0"
+                        Background="#F7F3EA"
+                        BorderBrush="#E0D5C4"
+                        BorderThickness="1"
+                        Focusable="False"
+                        Tag="{Binding}"
+                        ToolTip="Move to trash"
+                        Visibility="Collapsed"
+                        Click="TileDeleteButton_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Root"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver"
+                                         Value="True">
+                                    <Setter TargetName="Root"
+                                            Property="Background"
+                                            Value="#FFFDF8" />
+                                </Trigger>
+                                <Trigger Property="IsPressed"
+                                         Value="True">
+                                    <Setter TargetName="Root"
+                                            Property="Background"
+                                            Value="#EFE4CE" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <Grid Width="12"
+                          Height="12">
+                        <Path x:Name="TileDeleteIcon"
+                              Stroke="#7A6F62"
+                              StrokeThickness="1.25"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Data="M2,3.2 H10 M4.1,3.2 V2.1 H7.9 V3.2 M3.4,4.3 V9.6 M6,4.3 V9.6 M8.6,4.3 V9.6 M3.1,3.2 L3.7,10.3 H8.3 L8.9,3.2" />
+                        <Path x:Name="TileRestoreIcon"
+                              Stroke="#7A6F62"
+                              StrokeThickness="1.25"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Visibility="Collapsed"
+                              Data="M3,6.2 C3,4.2 4.6,2.6 6.6,2.6 H9.2 M6.2,1.3 L9,2.7 L6.2,4.1 M9,4.7 V9.2 H3.5 V5.7" />
+                    </Grid>
+                </Button>
+            </Grid>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsAction}"
                              Value="True">
@@ -177,6 +916,92 @@
                     <Setter TargetName="TileCreatedText"
                             Property="Visibility"
                             Value="Collapsed" />
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="Visibility"
+                            Value="Collapsed" />
+                    <Setter TargetName="TileDeleteButton"
+                            Property="Visibility"
+                            Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsFavorite}"
+                             Value="True">
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="Visibility"
+                            Value="Visible" />
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="Background"
+                            Value="Transparent" />
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="BorderBrush"
+                            Value="Transparent" />
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="BorderThickness"
+                            Value="0" />
+                    <Setter TargetName="TileFavoriteFilledStar"
+                            Property="Visibility"
+                            Value="Visible" />
+                    <Setter TargetName="TileFavoriteOutlineStar"
+                            Property="Visibility"
+                            Value="Collapsed" />
+                </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsAction}"
+                                   Value="False" />
+                        <Condition Binding="{Binding IsFavorite}"
+                                   Value="False" />
+                        <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}"
+                                   Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="Visibility"
+                            Value="Visible" />
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="Background"
+                            Value="#F7F3EA" />
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="BorderBrush"
+                            Value="#E0D5C4" />
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="BorderThickness"
+                            Value="1" />
+                    <Setter TargetName="TileDeleteButton"
+                            Property="Visibility"
+                            Value="Visible" />
+                </MultiDataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsAction}"
+                                   Value="False" />
+                        <Condition Binding="{Binding IsFavorite}"
+                                   Value="True" />
+                        <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}"
+                                   Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="Background"
+                            Value="#F7F3EA" />
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="BorderBrush"
+                            Value="#E0D5C4" />
+                    <Setter TargetName="TileFavoriteButton"
+                            Property="BorderThickness"
+                            Value="1" />
+                    <Setter TargetName="TileDeleteButton"
+                            Property="Visibility"
+                            Value="Visible" />
+                </MultiDataTrigger>
+                <DataTrigger Binding="{Binding IsBackup}"
+                             Value="True">
+                    <Setter TargetName="TileDeleteButton"
+                            Property="ToolTip"
+                            Value="Restore note" />
+                    <Setter TargetName="TileDeleteIcon"
+                            Property="Visibility"
+                            Value="Collapsed" />
+                    <Setter TargetName="TileRestoreIcon"
+                            Property="Visibility"
+                            Value="Visible" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -190,8 +1015,8 @@
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0"
-                Background="#FFFDF7"
-                BorderBrush="#D9D1C5"
+                Background="#FFFDF8"
+                BorderBrush="#D8D0C3"
                 BorderThickness="1"
                 CornerRadius="12"
                 Padding="16">
@@ -202,20 +1027,305 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Margin="0,0,0,12">
-                    <TextBlock FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="#2E2A24"
-                               Text="Notes" />
-                    <TextBlock Margin="0,4,0,0"
-                               Foreground="#6B6255"
-                               Text="Todo, sticky, then trash notes." />
+                    <Grid VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <Grid Width="27"
+                                  Height="21"
+                                  Margin="0,2,7,0">
+                                <Path Fill="#FDFBFF"
+                                      Stroke="#CFC5EC"
+                                      StrokeThickness="0.85"
+                                      StrokeLineJoin="Round"
+                                      Data="M3.2,4.2 C5.2,3.1 7.6,2.9 11.5,3.7 V15 C8.2,14.2 5.8,14.4 3.2,15.7 Z" />
+                                <Path Fill="#F9F6FF"
+                                      Stroke="#CFC5EC"
+                                      StrokeThickness="0.85"
+                                      StrokeLineJoin="Round"
+                                      Data="M23.8,4.2 C21.8,3.1 19.4,2.9 15.5,3.7 V15 C18.8,14.2 21.2,14.4 23.8,15.7 Z" />
+                                <Path Stroke="#D6CCEE"
+                                      StrokeThickness="0.9"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M13.5,3.5 V15.2" />
+                                <Path Stroke="#8FCBFF"
+                                      StrokeThickness="1.35"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M3.8,16.1 C6.7,15 9.3,15 13.5,15.9 C17.7,15 20.3,15 23.2,16.1" />
+                                <Path Stroke="#E5DCF6"
+                                      StrokeThickness="0.75"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M5.3,6.2 C6.8,5.7 8.4,5.6 10,5.9 M17,5.9 C18.6,5.6 20.2,5.7 21.7,6.2" />
+                                <Path Stroke="#EDE8F8"
+                                      StrokeThickness="0.75"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Data="M5.5,8.4 C6.9,8 8.4,7.9 9.9,8.1 M17.1,8.1 C18.6,7.9 20.1,8 21.5,8.4" />
+                            </Grid>
+                            <TextBlock Margin="0,-2,0,0"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#2E2A24"
+                                       Text="Notes" />
+                        </StackPanel>
+
+                        <Button x:Name="QuickBackupButton"
+                                Grid.Column="1"
+                                Style="{StaticResource PanelButtonStyle}"
+                                Height="32"
+                                MinWidth="112"
+                                Padding="15,0"
+                                HorizontalAlignment="Right"
+                                ToolTip="Backup notes"
+                                Click="QuickBackupButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <Grid x:Name="QuickBackupIcon"
+                                      Width="14"
+                                      Height="14"
+                                      Margin="0,0,7,0">
+                                    <Path x:Name="QuickBackupArrowIcon"
+                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          StrokeThickness="1.2"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round"
+                                          Data="M7,2 V10 M7,10 L4.3,7.3 M7,10 L9.7,7.3 M2.4,12 H11.6" />
+                                    <Path x:Name="QuickBackupSettingsIcon"
+                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          StrokeThickness="1.15"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round"
+                                          Visibility="Collapsed"
+                                          Data="M7,1.7 V3.1 M7,10.9 V12.3 M1.7,7 H3.1 M10.9,7 H12.3 M3.3,3.3 L4.3,4.3 M9.7,9.7 L10.7,10.7 M10.7,3.3 L9.7,4.3 M4.3,9.7 L3.3,10.7 M5.1,7 C5.1,6 6,5.1 7,5.1 C8,5.1 8.9,6 8.9,7 C8.9,8 8,8.9 7,8.9 C6,8.9 5.1,8 5.1,7 Z" />
+                                    <Path x:Name="QuickBackupDoneIcon"
+                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          StrokeThickness="1.45"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round"
+                                          Visibility="Collapsed"
+                                          Data="M2.4,7.2 L5.6,10.3 L11.8,3.8" />
+                                </Grid>
+                                <TextBlock x:Name="QuickBackupTextBlock"
+                                           VerticalAlignment="Center"
+                                           Text="Backup" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <WrapPanel Grid.Column="0"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Center">
+                                    <Button x:Name="SortByModifiedButton"
+                                            Style="{StaticResource SortModeButtonStyle}"
+                                            ToolTip="Sort by last modified"
+                                            Click="SortByModifiedButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid Width="13"
+                                                  Height="13"
+                                                  Margin="0,0,5,0">
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.25"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      Data="M2,4 H11 M2,7 H8.5 M2,10 H6.5" />
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.25"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Data="M10,2.2 L11.8,4 L8.1,7.7 L6.3,8.1 L6.7,6.3 Z" />
+                                            </Grid>
+                                            <TextBlock VerticalAlignment="Center"
+                                                       Text="Modified" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="SortByCreatedButton"
+                                            Style="{StaticResource SortModeButtonStyle}"
+                                            ToolTip="Sort by created date"
+                                            Click="SortByCreatedButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid Width="13"
+                                                  Height="13"
+                                                  Margin="0,0,5,0">
+                                                <Rectangle Width="10"
+                                                           Height="8.5"
+                                                           RadiusX="2"
+                                                           RadiusY="2"
+                                                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                           StrokeThickness="1.25"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Bottom" />
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.25"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      Data="M4,1.6 V4 M9,1.6 V4 M2.4,5 H11" />
+                                            </Grid>
+                                            <TextBlock VerticalAlignment="Center"
+                                                       Text="Created" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="SortByTitleButton"
+                                            Style="{StaticResource SortModeButtonStyle}"
+                                            ToolTip="Sort alphabetically"
+                                            Click="SortByTitleButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid Width="13"
+                                                  Height="13"
+                                                  Margin="0,0,5,0">
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.25"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Data="M2.5,10.7 L5.3,2.7 L8.1,10.7 M3.7,8 H6.9" />
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.25"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Data="M10.8,3 V10.5 M10.8,10.5 L8.9,8.6 M10.8,10.5 L12.7,8.6" />
+                                            </Grid>
+                                            <TextBlock VerticalAlignment="Center"
+                                                       Text="A-Z" />
+                                        </StackPanel>
+                                    </Button>
+                        </WrapPanel>
+
+                        <WrapPanel Grid.Column="1"
+                                   Margin="12,0,0,0"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center">
+                                    <Button x:Name="FilterAllButton"
+                                            Style="{StaticResource FilterModeButtonStyle}"
+                                            ToolTip="Show all notes"
+                                            Click="FilterAllButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid Width="13"
+                                                  Height="13">
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.1"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Data="M2.2,5 L7,2.4 L11.8,5 L7,7.7 Z" />
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.1"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Opacity="0.72"
+                                                      Data="M2.2,7.8 L7,10.4 L11.8,7.8 M2.2,10.1 L7,12.6 L11.8,10.1" />
+                                            </Grid>
+                                            <TextBlock Margin="5,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Text="All" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="FilterActiveButton"
+                                            Style="{StaticResource FilterModeButtonStyle}"
+                                            ToolTip="Show active notes"
+                                            Click="FilterActiveButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid Width="13"
+                                                  Height="13">
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.1"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Data="M2.4,10.8 V4 C4.1,3 6,3 8.1,3.6 V10.5 C6,9.9 4.1,10 2.4,10.8 Z" />
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.15"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Data="M8.8,5 L10.2,6.4 L12.5,3.8" />
+                                            </Grid>
+                                            <TextBlock Margin="5,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Text="Active" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="FilterHiddenButton"
+                                            Style="{StaticResource FilterModeButtonStyle}"
+                                            ToolTip="Show hidden notes"
+                                            Click="FilterHiddenButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid Width="13"
+                                                  Height="13">
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.15"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Data="M1.6,6.5 C3,4.4 4.8,3.4 6.5,3.4 C8.2,3.4 10,4.4 11.4,6.5 C10,8.6 8.2,9.6 6.5,9.6 C4.8,9.6 3,8.6 1.6,6.5 Z" />
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.25"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      Data="M2.4,11.2 L10.8,1.8" />
+                                            </Grid>
+                                            <TextBlock Margin="5,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Text="Hidden" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="FilterTrashButton"
+                                            Style="{StaticResource FilterModeButtonStyle}"
+                                            Margin="0"
+                                            ToolTip="Show trash notes"
+                                            Click="FilterTrashButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid Width="13"
+                                                  Height="13">
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.1"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Data="M1.9,4 H11.1 M4.6,4 V2.4 H8.4 V4 M3.2,5.1 L3.8,11.7 H9.2 L9.8,5.1 Z" />
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="0.95"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      Opacity="0.72"
+                                                      Data="M5.2,6.4 V9.9 M6.5,6.4 V9.9 M7.8,6.4 V9.9" />
+                                            </Grid>
+                                            <TextBlock Margin="5,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Text="Trash" />
+                                        </StackPanel>
+                                    </Button>
+                        </WrapPanel>
+                    </Grid>
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.Resources>
+                        <Style TargetType="ScrollBar"
+                               BasedOn="{StaticResource SidebarVerticalScrollBarStyle}" />
+                    </ScrollViewer.Resources>
                     <StackPanel>
-                        <TextBlock FontSize="16"
+                        <TextBlock x:Name="TodoSectionHeader"
+                                   FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="#2E2A24"
                                    Text="Todo" />
@@ -234,7 +1344,8 @@
                             </ItemsControl.ItemContainerStyle>
                         </ItemsControl>
 
-                        <TextBlock FontSize="16"
+                        <TextBlock x:Name="MemoSectionHeader"
+                                   FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="#2E2A24"
                                    Text="Memo" />
@@ -253,7 +1364,8 @@
                             </ItemsControl.ItemContainerStyle>
                         </ItemsControl>
 
-                        <TextBlock FontSize="16"
+                        <TextBlock x:Name="TrashSectionHeader"
+                                   FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="#2E2A24"
                                    Text="Trash" />
@@ -277,8 +1389,8 @@
         </Border>
 
         <Border Grid.Column="2"
-                Background="#FFFDF7"
-                BorderBrush="#D9D1C5"
+                Background="#FFFDF8"
+                BorderBrush="#D8D0C3"
                 BorderThickness="1"
                 CornerRadius="12"
                 Padding="0">
@@ -290,7 +1402,7 @@
 
                 <Grid Grid.Row="0">
                     <Border Height="48"
-                            Background="#DDD6C8"
+                            Background="#D8D0C3"
                             CornerRadius="12,12,0,0" />
 
                     <Grid Margin="0,0,0,0">
@@ -363,61 +1475,135 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="0"
-                                    Margin="0,0,0,14">
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Foreground="#2E2A24"
-                                       Text="Selected Note" />
-                            <TextBlock x:Name="SelectedMetaTextBlock"
-                                       Margin="0,4,0,0"
-                                       Foreground="#6B6255"
-                                       Text="Select a note tile." />
-                        </StackPanel>
+                        <Grid Grid.Row="0"
+                              Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#2E2A24"
+                                           Text="Selected Note" />
+                                <TextBlock x:Name="SelectedMetaTextBlock"
+                                           Margin="0,4,0,0"
+                                           Foreground="#6B6255"
+                                           Text="Select a note tile." />
+                            </StackPanel>
+
+                            <Button x:Name="FavoriteToggleButton"
+                                    Grid.Column="1"
+                                    Style="{StaticResource FavoriteIconButtonStyle}"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    ToolTip="Favorite note"
+                                    Click="FavoriteToggleButton_Click">
+                                <Grid Width="16"
+                                      Height="16">
+                                    <Path x:Name="FavoriteToggleOutlineIcon"
+                                          Stretch="Fill"
+                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          StrokeThickness="1.5"
+                                          StrokeLineJoin="Round"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          Data="M8,0.9 L10,5.2 L14.8,5.7 L11.2,8.9 L12.2,13.6 L8,11.2 L3.8,13.6 L4.8,8.9 L1.2,5.7 L6,5.2 Z" />
+                                    <Path x:Name="FavoriteToggleFilledIcon"
+                                          Stretch="Fill"
+                                          Fill="#E1B751"
+                                          Stroke="#B08A38"
+                                          StrokeThickness="1.1"
+                                          StrokeLineJoin="Round"
+                                          Data="M8,0.9 L10,5.2 L14.8,5.7 L11.2,8.9 L12.2,13.6 L8,11.2 L3.8,13.6 L4.8,8.9 L1.2,5.7 L6,5.2 Z"
+                                          Visibility="Collapsed" />
+                                </Grid>
+                            </Button>
+                        </Grid>
 
                         <StackPanel Grid.Row="1"
-                                    Margin="0,0,0,14">
+                                    Margin="0,0,0,12">
                             <TextBlock Margin="0,0,0,6"
                                        FontWeight="SemiBold"
+                                       Foreground="#3F4347"
                                        Text="Background" />
                             <WrapPanel x:Name="SelectedBackgroundPresetPanel" />
                         </StackPanel>
 
                         <StackPanel Grid.Row="2"
-                                    Margin="0,0,0,14">
+                                    Margin="0,0,0,12">
                             <TextBlock Margin="0,0,0,6"
                                        FontWeight="SemiBold"
+                                       Foreground="#3F4347"
                                        Text="Name" />
-                            <TextBlock x:Name="SelectedTitleTextBlock"
-                                       TextWrapping="Wrap"
-                                       Foreground="#2E2A24"
-                                       Text="-" />
+                            <Grid>
+                                <Border Background="#FAF7F0"
+                                        BorderBrush="#D8D0C3"
+                                        BorderThickness="1"
+                                        CornerRadius="7"
+                                        Padding="9,7">
+                                    <TextBlock x:Name="SelectedTitleTextBlock"
+                                               Cursor="IBeam"
+                                               Foreground="#2E2A24"
+                                               Text="-"
+                                               TextWrapping="Wrap"
+                                               MouseLeftButtonDown="SelectedTitleTextBlock_MouseLeftButtonDown" />
+                                </Border>
+                                <TextBox x:Name="SelectedTitleEditor"
+                                         Style="{StaticResource ManagerInlineEditorTextBoxStyle}"
+                                         AcceptsReturn="False"
+                                         VerticalScrollBarVisibility="Disabled"
+                                         Visibility="Collapsed" />
+                            </Grid>
                         </StackPanel>
 
                         <StackPanel Grid.Row="3"
-                                    Margin="0,0,0,14">
+                                    Margin="0,0,0,12">
                             <TextBlock Margin="0,0,0,6"
                                        FontWeight="SemiBold"
+                                       Foreground="#3F4347"
                                        Text="Content" />
-                            <Border x:Name="SelectedPreviewBorder"
-                                    BorderBrush="#CFC7BB"
-                                    BorderThickness="1"
-                                    Background="White">
-                                <ScrollViewer x:Name="SelectedPreviewScrollViewer"
-                                              VerticalScrollBarVisibility="Visible"
-                                              HorizontalScrollBarVisibility="Disabled"
-                                              Padding="8,6">
-                                    <TextBlock x:Name="SelectedPreviewTextBlock"
-                                               TextWrapping="Wrap"
-                                               Foreground="#2E2A24" />
-                                </ScrollViewer>
-                            </Border>
+                            <Grid>
+                                <Border Background="#FAF7F0"
+                                        BorderBrush="#D8D0C3"
+                                        BorderThickness="1"
+                                        CornerRadius="7"
+                                        Padding="9,7"
+                                        MouseLeftButtonDown="SelectedPreviewScrollViewer_MouseLeftButtonDown">
+                                    <ScrollViewer x:Name="SelectedPreviewScrollViewer"
+                                                  Style="{StaticResource SelectedReadOnlyScrollViewerStyle}"
+                                                  Cursor="IBeam"
+                                                  MouseLeftButtonDown="SelectedPreviewScrollViewer_MouseLeftButtonDown">
+                                        <ScrollViewer.Resources>
+                                            <Style TargetType="ScrollBar"
+                                                   BasedOn="{StaticResource ContentVerticalScrollBarStyle}" />
+                                        </ScrollViewer.Resources>
+                                        <TextBlock x:Name="SelectedPreviewTextBlock"
+                                                   Foreground="#2E2A24"
+                                                   TextWrapping="Wrap"
+                                                   MouseLeftButtonDown="SelectedPreviewScrollViewer_MouseLeftButtonDown" />
+                                    </ScrollViewer>
+                                </Border>
+                                <Border x:Name="SelectedPreviewEditorBorder"
+                                        Background="#FAF7F0"
+                                        BorderBrush="#D8D0C3"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Visibility="Collapsed">
+                                    <TextBox x:Name="SelectedContentEditor"
+                                             Style="{StaticResource ManagerInlineEditorTextBoxStyle}"
+                                             BorderThickness="0"
+                                             Background="Transparent" />
+                                </Border>
+                            </Grid>
                         </StackPanel>
 
                         <StackPanel Grid.Row="4"
-                                    Margin="0,0,0,14">
+                                    Margin="0,0,0,12">
                             <TextBlock Margin="0,0,0,6"
                                        FontWeight="SemiBold"
+                                       Foreground="#3F4347"
                                        Text="Modified" />
                             <TextBlock x:Name="SelectedModifiedTextBlock"
                                        Foreground="#6B6255"
@@ -425,9 +1611,10 @@
                         </StackPanel>
 
                         <StackPanel Grid.Row="5"
-                                    Margin="0,0,0,14">
+                                    Margin="0,0,0,12">
                             <TextBlock Margin="0,0,0,6"
                                        FontWeight="SemiBold"
+                                       Foreground="#3F4347"
                                        Text="Created" />
                             <TextBlock x:Name="SelectedCreatedTextBlock"
                                        Foreground="#6B6255"
@@ -437,28 +1624,24 @@
                         <StackPanel Grid.Row="6"
                                     Margin="0,16,0,0">
                             <Button x:Name="ToggleHiddenButton"
-                                    Height="36"
+                                    Style="{StaticResource PanelButtonStyle}"
                                     Margin="0,0,0,8"
                                     Content="Hide Note"
                                     Click="ToggleHiddenButton_Click" />
                             <Button x:Name="DeleteNoteButton"
-                                    Height="36"
+                                    Style="{StaticResource DangerPanelButtonStyle}"
                                     Margin="0,0,0,8"
-                                    Background="#B94A48"
-                                    Foreground="White"
                                     Content="Delete Note"
                                     Click="DeleteNoteButton_Click" />
                             <Button x:Name="RestoreBackupButton"
-                                    Height="36"
+                                    Style="{StaticResource PanelButtonStyle}"
                                     Margin="0,0,0,8"
                                     Visibility="Collapsed"
                                     Content="Restore"
                                     Click="RestoreBackupButton_Click" />
                             <Button x:Name="DeleteBackupPermanentlyButton"
-                                    Height="36"
+                                    Style="{StaticResource DangerPanelButtonStyle}"
                                     Visibility="Collapsed"
-                                    Background="#8D2C2C"
-                                    Foreground="White"
                                     Content="Delete Permanently"
                                     Click="DeleteBackupPermanentlyButton_Click" />
                         </StackPanel>
@@ -469,53 +1652,59 @@
                                   Visibility="Collapsed"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled">
+                        <ScrollViewer.Resources>
+                            <Style TargetType="ScrollBar"
+                                   BasedOn="{StaticResource SidebarVerticalScrollBarStyle}" />
+                        </ScrollViewer.Resources>
                         <StackPanel>
                             <TextBlock FontSize="18"
                                        FontWeight="SemiBold"
                                        Foreground="#2E2A24"
                                        Text="Global Settings" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Foreground="#6B6255"
-                                       Text="These settings apply to every note." />
 
-                            <StackPanel Margin="0,16,0,0">
-                                <TextBlock Margin="0,0,0,6"
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Margin="0,0,0,4"
                                            FontWeight="SemiBold"
+                                           Foreground="#3F4347"
                                            Text="Title Font Size" />
                                 <ComboBox x:Name="GlobalTitleFontSizeComboBox"
-                                          Height="34"
+                                          Style="{StaticResource ManagerComboBoxStyle}"
                                           DisplayMemberPath="Label"
                                           SelectedValuePath="Value"
                                           SelectionChanged="GlobalFontSetting_Changed" />
                             </StackPanel>
 
-                            <StackPanel Margin="0,14,0,0">
-                                <TextBlock Margin="0,0,0,6"
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Margin="0,0,0,4"
                                            FontWeight="SemiBold"
+                                           Foreground="#3F4347"
                                            Text="Content Font Size" />
                                 <ComboBox x:Name="GlobalContentFontSizeComboBox"
-                                          Height="34"
+                                          Style="{StaticResource ManagerComboBoxStyle}"
                                           DisplayMemberPath="Label"
                                           SelectedValuePath="Value"
                                           SelectionChanged="GlobalFontSetting_Changed" />
                             </StackPanel>
 
-                            <StackPanel Margin="0,14,0,0">
-                                <TextBlock Margin="0,0,0,6"
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Margin="0,0,0,4"
                                            FontWeight="SemiBold"
+                                           Foreground="#3F4347"
                                            Text="Default Background" />
                                 <ComboBox x:Name="GlobalDefaultBackgroundColorComboBox"
-                                          Height="34"
+                                          Style="{StaticResource ManagerComboBoxStyle}"
                                           DisplayMemberPath="Label"
                                           SelectedValuePath="Value"
                                           SelectionChanged="GlobalFontSetting_Changed" />
                             </StackPanel>
 
-                            <StackPanel Margin="0,14,0,0">
-                                <TextBlock Margin="0,0,0,6"
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Margin="0,0,0,4"
                                            FontWeight="SemiBold"
+                                           Foreground="#3F4347"
                                            Text="Corner Radius" />
                                 <Slider x:Name="CornerRadiusSlider"
+                                        Style="{StaticResource ManagerSliderStyle}"
                                         Minimum="0"
                                         Maximum="30"
                                         TickFrequency="1"
@@ -529,32 +1718,62 @@
                                            Text="0" />
                             </StackPanel>
 
-                            <StackPanel Margin="0,14,0,0">
-                                <TextBlock Margin="0,0,0,6"
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Margin="0,0,0,4"
                                            FontWeight="SemiBold"
+                                           Foreground="#3F4347"
                                            Text="Title Line Spacing" />
                                 <ComboBox x:Name="GlobalTitleLineSpacingComboBox"
-                                          Height="34"
+                                          Style="{StaticResource ManagerComboBoxStyle}"
                                           DisplayMemberPath="Label"
                                           SelectedValuePath="Value"
                                           SelectionChanged="GlobalFontSetting_Changed" />
                             </StackPanel>
 
-                            <StackPanel Margin="0,14,0,0">
-                                <TextBlock Margin="0,0,0,6"
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Margin="0,0,0,4"
                                            FontWeight="SemiBold"
+                                           Foreground="#3F4347"
                                            Text="Content Line Spacing" />
                                 <ComboBox x:Name="GlobalContentLineSpacingComboBox"
-                                          Height="34"
+                                          Style="{StaticResource ManagerComboBoxStyle}"
                                           DisplayMemberPath="Label"
                                           SelectedValuePath="Value"
                                           SelectionChanged="GlobalFontSetting_Changed" />
+                            </StackPanel>
+
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Margin="0,0,0,6"
+                                           FontWeight="SemiBold"
+                                           Foreground="#3F4347"
+                                           Text="Inactive Note Shade" />
+                                <WrapPanel x:Name="HiddenNoteDarknessPresetPanel" />
                             </StackPanel>
 
                             <Button Margin="0,18,0,0"
-                                    Height="36"
+                                    Style="{StaticResource PanelButtonStyle}"
                                     Content="Open Notes Folder"
                                     Click="OpenNotesFolderButton_Click" />
+
+                            <Button Margin="0,10,0,0"
+                                    Style="{StaticResource PanelButtonStyle}"
+                                    Height="46"
+                                    Click="GoogleDriveSettingsButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Width="16"
+                                           Height="16"
+                                           Margin="5,8,7,0"
+                                           VerticalAlignment="Top"
+                                           Source="pack://application:,,,/Assets/GoogleDriveIcon.png" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Backup Settings" />
+                                        <TextBlock Margin="0,1,0,0"
+                                                   FontSize="9"
+                                                   Foreground="#8E8578"
+                                                   Text="Uses Google Drive for desktop" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>

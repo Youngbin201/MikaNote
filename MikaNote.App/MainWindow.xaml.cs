@@ -1,7 +1,11 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Threading;
 using WpfButton = System.Windows.Controls.Button;
 using MessageBox = System.Windows.MessageBox;
 using MediaBrush = System.Windows.Media.Brush;
@@ -14,13 +18,33 @@ namespace MikaNote.App;
 
 public partial class MainWindow : Window
 {
+    private enum NoteFilterMode
+    {
+        All,
+        Active,
+        Hidden,
+        Trash
+    }
+
+    private enum NoteSortMode
+    {
+        ModifiedAt,
+        CreatedAt,
+        Title
+    }
+
     private readonly App _app;
     private readonly ObservableCollection<ManagerTileItem> _todoTiles = new();
     private readonly ObservableCollection<ManagerTileItem> _memoTiles = new();
     private readonly ObservableCollection<ManagerTileItem> _backupTiles = new();
+    private readonly LocalBackupService _localBackupService = new();
+    private readonly DispatcherTimer _quickBackupStatusTimer;
     private bool _isRefreshingUi;
+    private bool _isSelectedNoteEditing;
     private bool _showGlobalSettings;
+    private NoteFilterMode _noteFilterMode = NoteFilterMode.All;
     private string? _selectedTileKey;
+    private NoteSortMode _noteSortMode = NoteSortMode.ModifiedAt;
 
     private static readonly PresetOption[] FontSizePresets =
     {
@@ -59,6 +83,15 @@ public partial class MainWindow : Window
         new("White", "#FFFFFF")
     };
 
+    private static readonly DarknessPreset[] HiddenNoteDarknessPresets =
+    {
+        new("Barely Dimmed", 0.98, "#F5F6F7"),
+        new("Soft Dim", 0.94, "#DDE2E6"),
+        new("Balanced", 0.90, "#C3CAD1"),
+        new("Deep Dim", 0.84, "#A5AEB8"),
+        new("Muted", 0.76, "#7D8792")
+    };
+
     public MainWindow(App app)
     {
         InitializeComponent();
@@ -73,21 +106,37 @@ public partial class MainWindow : Window
         GlobalContentLineSpacingComboBox.ItemsSource = LineSpacingPresets;
         GlobalDefaultBackgroundColorComboBox.ItemsSource = BackgroundPresets;
 
+        _quickBackupStatusTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2.2)
+        };
+        _quickBackupStatusTimer.Tick += (_, _) =>
+        {
+            _quickBackupStatusTimer.Stop();
+            UpdateQuickBackupButtonUi();
+        };
+
         TodoTilesItemsControl.ItemsSource = _todoTiles;
         MemoTilesItemsControl.ItemsSource = _memoTiles;
         BackupTilesItemsControl.ItemsSource = _backupTiles;
 
         BuildSelectedBackgroundPresetButtons();
+        BuildHiddenNoteDarknessPresetButtons();
         LoadSettingsIntoUi();
         RebuildTiles(selectKey: null);
         UpdatePanelModeUi();
+        UpdateSortModeButtons();
+        UpdateFilterButtons();
+        UpdateQuickBackupButtonUi();
         RefreshSelectionUi();
+        Deactivated += (_, _) => CommitSelectedNoteEditIfNeeded();
     }
 
     protected override void OnClosed(EventArgs e)
     {
         _app.NotesChanged -= App_NotesChanged;
         _app.SettingsChanged -= App_SettingsChanged;
+        _quickBackupStatusTimer.Stop();
         base.OnClosed(e);
     }
 
@@ -102,6 +151,7 @@ public partial class MainWindow : Window
         LoadSettingsIntoUi();
         RebuildTiles(_selectedTileKey);
         UpdatePanelModeUi();
+        UpdateQuickBackupButtonUi();
         RefreshSelectionUi();
     }
 
@@ -115,6 +165,7 @@ public partial class MainWindow : Window
         GlobalTitleLineSpacingComboBox.SelectedValue = _app.Settings.TitleLineSpacing;
         GlobalContentLineSpacingComboBox.SelectedValue = _app.Settings.ContentLineSpacing;
         GlobalDefaultBackgroundColorComboBox.SelectedValue = _app.Settings.DefaultBackgroundColor;
+        SetHiddenNoteDarknessPresetSelection(_app.Settings.HiddenNoteDarknessFactor);
         _isRefreshingUi = false;
     }
 
@@ -126,49 +177,71 @@ public partial class MainWindow : Window
         _memoTiles.Clear();
         _backupTiles.Clear();
 
-        foreach (NoteDocument note in _app.Notes
-                     .Where(note => note.Kind == NoteKind.Todo)
-                     .OrderBy(note => note.Title, StringComparer.OrdinalIgnoreCase))
+        bool showActiveNotes = _noteFilterMode is NoteFilterMode.All or NoteFilterMode.Active;
+        bool showHiddenNotes = _noteFilterMode is NoteFilterMode.All or NoteFilterMode.Hidden;
+        bool showTrashNotes = _noteFilterMode is NoteFilterMode.All or NoteFilterMode.Trash;
+
+        if (showActiveNotes)
         {
-            _todoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            foreach (NoteDocument note in SortNotes(_app.Notes.Where(note => note.Kind == NoteKind.Todo)))
+            {
+                _todoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
-        foreach (NoteDocument note in _app.HiddenNotes
-                     .Where(note => note.Kind == NoteKind.Todo)
-                     .OrderBy(note => note.Title, StringComparer.OrdinalIgnoreCase))
+        if (showHiddenNotes)
         {
-            _todoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            foreach (NoteDocument note in SortNotes(_app.HiddenNotes.Where(note => note.Kind == NoteKind.Todo)))
+            {
+                _todoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
-        _todoTiles.Add(BuildActionTile(ManagerTileActionKind.CreateTodo));
-
-        foreach (NoteDocument note in _app.Notes
-                     .Where(note => note.Kind == NoteKind.Standard)
-                     .OrderBy(note => note.Title, StringComparer.OrdinalIgnoreCase))
+        if (_noteFilterMode is NoteFilterMode.All or NoteFilterMode.Active)
         {
-            _memoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            _todoTiles.Add(BuildActionTile(ManagerTileActionKind.CreateTodo));
         }
 
-        foreach (NoteDocument note in _app.HiddenNotes
-                     .Where(note => note.Kind == NoteKind.Standard)
-                     .OrderBy(note => note.Title, StringComparer.OrdinalIgnoreCase))
+        if (showActiveNotes)
         {
-            _memoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            foreach (NoteDocument note in SortNotes(_app.Notes.Where(note => note.Kind == NoteKind.Standard)))
+            {
+                _memoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
-        _memoTiles.Add(BuildActionTile(ManagerTileActionKind.CreateSticky));
-
-        foreach (NoteDocument note in _app.BackupNotes
-                     .OrderBy(note => note.Kind == NoteKind.Todo ? 0 : 1)
-                     .ThenBy(note => note.Title, StringComparer.OrdinalIgnoreCase))
+        if (showHiddenNotes)
         {
-            _backupTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            foreach (NoteDocument note in SortNotes(_app.HiddenNotes.Where(note => note.Kind == NoteKind.Standard)))
+            {
+                _memoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
-        if (_app.BackupNotes.Count > 0)
+        if (_noteFilterMode is NoteFilterMode.All or NoteFilterMode.Active)
         {
-            _backupTiles.Add(BuildActionTile(ManagerTileActionKind.EmptyTrash));
+            _memoTiles.Add(BuildActionTile(ManagerTileActionKind.CreateSticky));
         }
+
+        if (showTrashNotes)
+        {
+            foreach (NoteDocument note in SortNotes(_app.BackupNotes))
+            {
+                _backupTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (_app.BackupNotes.Count > 0)
+            {
+                _backupTiles.Add(BuildActionTile(ManagerTileActionKind.EmptyTrash));
+            }
+        }
+
+        TodoSectionHeader.Visibility = _noteFilterMode == NoteFilterMode.Trash ? Visibility.Collapsed : Visibility.Visible;
+        TodoTilesItemsControl.Visibility = _noteFilterMode == NoteFilterMode.Trash ? Visibility.Collapsed : Visibility.Visible;
+        MemoSectionHeader.Visibility = _noteFilterMode == NoteFilterMode.Trash ? Visibility.Collapsed : Visibility.Visible;
+        MemoTilesItemsControl.Visibility = _noteFilterMode == NoteFilterMode.Trash ? Visibility.Collapsed : Visibility.Visible;
+        TrashSectionHeader.Visibility = showTrashNotes ? Visibility.Visible : Visibility.Collapsed;
+        BackupTilesItemsControl.Visibility = showTrashNotes ? Visibility.Visible : Visibility.Collapsed;
 
         _selectedTileKey = GetSelectableTiles()
             .Select(tile => tile.Key)
@@ -176,6 +249,25 @@ public partial class MainWindow : Window
             ?? GetSelectableTiles().FirstOrDefault()?.Key;
 
         _isRefreshingUi = false;
+    }
+
+    private IEnumerable<NoteDocument> SortNotes(IEnumerable<NoteDocument> notes)
+    {
+        return _noteSortMode switch
+        {
+            NoteSortMode.CreatedAt => notes
+                .OrderByDescending(note => note.IsFavorite)
+                .ThenByDescending(note => note.CreatedAt)
+                .ThenBy(note => note.Title, StringComparer.OrdinalIgnoreCase),
+            NoteSortMode.Title => notes
+                .OrderByDescending(note => note.IsFavorite)
+                .ThenBy(note => note.Title, StringComparer.OrdinalIgnoreCase)
+                .ThenByDescending(note => note.ModifiedAt),
+            _ => notes
+                .OrderByDescending(note => note.IsFavorite)
+                .ThenByDescending(note => note.ModifiedAt)
+                .ThenBy(note => note.Title, StringComparer.OrdinalIgnoreCase)
+        };
     }
 
     private ManagerTileItem BuildActionTile(ManagerTileActionKind actionKind)
@@ -196,6 +288,8 @@ public partial class MainWindow : Window
             Key = $"action::{actionKind}",
             ActionKind = actionKind,
             IsSelected = false,
+            IsFavorite = false,
+            IsBackup = false,
             Title = label,
             ActionLabel = label,
             ActionGlyph = glyph,
@@ -203,7 +297,7 @@ public partial class MainWindow : Window
             ActionGlyphFontSize = glyphFontSize,
             Badge = string.Empty,
             RelativeTimeText = string.Empty,
-            BackgroundBrush = new MediaSolidColorBrush(MediaColor.FromRgb(248, 244, 236)),
+            BackgroundBrush = new MediaSolidColorBrush(MediaColor.FromRgb(250, 247, 240)),
             TitleBrush = new MediaSolidColorBrush(MediaColor.FromRgb(46, 42, 36)),
             ContentBrush = new MediaSolidColorBrush(MediaColor.FromRgb(107, 98, 85)),
             CornerRadius = new CornerRadius(Math.Max(8, _app.Settings.NoteCornerRadius)),
@@ -219,7 +313,7 @@ public partial class MainWindow : Window
         MediaColor backgroundColor = ParseBackgroundColor(note.BackgroundColor);
         if (note.IsHidden)
         {
-            backgroundColor = DarkenColor(backgroundColor, 0.92);
+            backgroundColor = DarkenColor(backgroundColor, _app.Settings.HiddenNoteDarknessFactor);
         }
 
         MediaBrush foregroundBrush = CloneBrushWithOpacity(BuildForegroundBrush(backgroundColor), note.IsHidden ? 0.82 : 1.0);
@@ -230,6 +324,8 @@ public partial class MainWindow : Window
             Key = BuildNoteKey(note),
             Note = note,
             IsSelected = isSelected,
+            IsFavorite = note.IsFavorite,
+            IsBackup = note.IsBackup,
             Title = note.Title,
             PreviewText = BuildPreviewText(note),
             RelativeTimeText = FormatRelativeAge(note.ModifiedAt),
@@ -288,17 +384,22 @@ public partial class MainWindow : Window
         DeleteNoteButton.Visibility = hasSelection && !isBackup ? Visibility.Visible : Visibility.Collapsed;
         RestoreBackupButton.Visibility = hasSelection && isBackup ? Visibility.Visible : Visibility.Collapsed;
         DeleteBackupPermanentlyButton.Visibility = hasSelection && isBackup ? Visibility.Visible : Visibility.Collapsed;
+        UpdateFavoriteButtonUi(selected);
 
         if (selected is null)
         {
+            _isSelectedNoteEditing = false;
             SelectedMetaTextBlock.Text = "Select a note tile.";
             SelectedTitleTextBlock.Text = "-";
+            SelectedTitleEditor.Text = string.Empty;
             SelectedModifiedTextBlock.Text = "-";
             SelectedCreatedTextBlock.Text = "-";
             SelectedPreviewTextBlock.Text = string.Empty;
+            SelectedContentEditor.Text = string.Empty;
             SetBackgroundPresetButtonsEnabled(false, null);
             RestoreBackupButton.Visibility = Visibility.Collapsed;
             ToggleHiddenButton.Content = "Hide Note";
+            UpdateSelectedNoteEditorUi();
             _isRefreshingUi = false;
             return;
         }
@@ -309,6 +410,11 @@ public partial class MainWindow : Window
                 ? $"Hidden {(selected.Kind == NoteKind.Todo ? "todo" : "sticky")} memo"
             : $"{(selected.Kind == NoteKind.Todo ? "Todo" : "Sticky")} memo";
         SelectedTitleTextBlock.Text = selected.Title;
+        if (!_isSelectedNoteEditing)
+        {
+            SelectedTitleEditor.Text = selected.Title;
+            SelectedContentEditor.Text = BuildManagerEditableContent(selected);
+        }
         SelectedModifiedTextBlock.Text = FormatRelativeAge(selected.ModifiedAt);
         SelectedCreatedTextBlock.Text = FormatRelativeAge(selected.CreatedAt);
         ApplySelectedPreviewSizing();
@@ -316,6 +422,7 @@ public partial class MainWindow : Window
         SelectedPreviewScrollViewer.ScrollToTop();
         SetBackgroundPresetButtonsEnabled(!isBackup, selected.BackgroundColor);
         ToggleHiddenButton.Content = isHidden ? "Show Note" : "Hide Note";
+        UpdateSelectedNoteEditorUi();
 
         _isRefreshingUi = false;
     }
@@ -358,6 +465,40 @@ public partial class MainWindow : Window
         RefreshSelectionUi();
     }
 
+    private void SelectedTitleTextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            BeginSelectedNoteEdit(focusContent: false);
+            e.Handled = true;
+        }
+    }
+
+    private void SelectedPreviewScrollViewer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            BeginSelectedNoteEdit(focusContent: true);
+            e.Handled = true;
+        }
+    }
+
+    private void Window_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isSelectedNoteEditing)
+        {
+            return;
+        }
+
+        DependencyObject? source = e.OriginalSource as DependencyObject;
+        if (IsDescendantOf(source, SelectedTitleEditor) || IsDescendantOf(source, SelectedContentEditor))
+        {
+            return;
+        }
+
+        CommitSelectedNoteEditIfNeeded();
+    }
+
     private void SelectedNoteTabButton_Click(object sender, RoutedEventArgs e)
     {
         _showGlobalSettings = false;
@@ -368,6 +509,137 @@ public partial class MainWindow : Window
     {
         _showGlobalSettings = true;
         UpdatePanelModeUi();
+    }
+
+    private void QuickBackupButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!IsBackupFolderLinked())
+        {
+            _showGlobalSettings = true;
+            UpdatePanelModeUi();
+            OpenBackupSettingsWindow();
+            return;
+        }
+
+        try
+        {
+            LocalBackupItem backup = _localBackupService.CreateBackup(_app.NotesDirectory, _app.Settings.GoogleDriveBackupFolderPath);
+            ShowQuickBackupStatus($"Backed up {backup.CreatedAt:HH:mm}", success: true);
+        }
+        catch (Exception exception)
+        {
+            ShowQuickBackupStatus("Backup failed", success: false);
+            MessageBox.Show(
+                $"Could not create a backup.\n{exception.Message}",
+                "MikaNote Backup",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void FavoriteToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedNote() is not NoteDocument selected || selected.IsBackup)
+        {
+            return;
+        }
+
+        _app.SetFavorite(selected, !selected.IsFavorite);
+        RebuildTiles(BuildNoteKey(selected));
+        RefreshSelectionUi();
+    }
+
+    private void TileFavoriteButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isRefreshingUi ||
+            sender is not System.Windows.Controls.Button button ||
+            button.Tag is not ManagerTileItem tile ||
+            tile.Note is not NoteDocument note ||
+            note.IsBackup)
+        {
+            return;
+        }
+
+        _app.SetFavorite(note, !note.IsFavorite);
+        _selectedTileKey = tile.Key;
+        RebuildTiles(_selectedTileKey);
+        RefreshSelectionUi();
+        e.Handled = true;
+    }
+
+    private void TileDeleteButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isRefreshingUi ||
+            sender is not System.Windows.Controls.Button button ||
+            button.Tag is not ManagerTileItem tile ||
+            tile.Note is not NoteDocument note)
+        {
+            return;
+        }
+
+        if (note.IsBackup)
+        {
+            NoteDocument? restored = _app.RestoreBackupNote(note);
+            RebuildTiles(restored is null ? null : BuildNoteKey(restored));
+            RefreshSelectionUi();
+            e.Handled = true;
+            return;
+        }
+
+        _app.DeleteNote(note);
+        RebuildTiles(selectKey: null);
+        RefreshSelectionUi();
+        e.Handled = true;
+    }
+
+    private void SortByModifiedButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetNoteSortMode(NoteSortMode.ModifiedAt);
+    }
+
+    private void SortByCreatedButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetNoteSortMode(NoteSortMode.CreatedAt);
+    }
+
+    private void SortByTitleButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetNoteSortMode(NoteSortMode.Title);
+    }
+
+    private void FilterAllButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetNoteFilterMode(NoteFilterMode.All);
+    }
+
+    private void FilterActiveButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetNoteFilterMode(NoteFilterMode.Active);
+    }
+
+    private void FilterHiddenButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetNoteFilterMode(NoteFilterMode.Hidden);
+    }
+
+    private void FilterTrashButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetNoteFilterMode(NoteFilterMode.Trash);
+    }
+
+    private void GoogleDriveSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        OpenBackupSettingsWindow();
+    }
+
+    private void OpenBackupSettingsWindow()
+    {
+        GoogleDriveFolderWindow dialog = new(_app)
+        {
+            Owner = this
+        };
+        dialog.ShowDialog();
+        UpdateQuickBackupButtonUi();
     }
 
     private void OpenNotesFolderButton_Click(object sender, RoutedEventArgs e)
@@ -533,13 +805,16 @@ public partial class MainWindow : Window
         string defaultBackgroundColor = GlobalDefaultBackgroundColorComboBox.SelectedValue as string
             ?? _app.Settings.DefaultBackgroundColor;
 
+        double hiddenNoteDarknessFactor = GetSelectedHiddenNoteDarknessFactor();
+
         _app.UpdateGlobalSettings(
             Math.Round(CornerRadiusSlider.Value),
             titleFontSize,
             contentFontSize,
             titleLineSpacing,
             contentLineSpacing,
-            defaultBackgroundColor);
+            defaultBackgroundColor,
+            hiddenNoteDarknessFactor);
     }
 
     private static string BuildPreviewText(NoteDocument note)
@@ -634,6 +909,125 @@ public partial class MainWindow : Window
         }
     }
 
+    private void BeginSelectedNoteEdit(bool focusContent)
+    {
+        NoteDocument? selected = GetSelectedNote();
+        if (selected is null || selected.IsBackup)
+        {
+            return;
+        }
+
+        _isSelectedNoteEditing = true;
+        SelectedTitleEditor.Text = selected.Title;
+        SelectedContentEditor.Text = BuildManagerEditableContent(selected);
+        UpdateSelectedNoteEditorUi();
+
+        if (focusContent)
+        {
+            SelectedContentEditor.Focus();
+            SelectedContentEditor.CaretIndex = SelectedContentEditor.Text.Length;
+            return;
+        }
+
+        SelectedTitleEditor.Focus();
+        SelectedTitleEditor.SelectAll();
+    }
+
+    private void CommitSelectedNoteEditIfNeeded()
+    {
+        if (!_isSelectedNoteEditing)
+        {
+            return;
+        }
+
+        NoteDocument? selected = GetSelectedNote();
+        _isSelectedNoteEditing = false;
+
+        if (selected is null || selected.IsBackup)
+        {
+            UpdateSelectedNoteEditorUi();
+            return;
+        }
+
+        string updatedTitle = SelectedTitleEditor.Text ?? string.Empty;
+        string updatedContent = SelectedContentEditor.Text ?? string.Empty;
+
+        if (string.Equals(updatedTitle, selected.Title, StringComparison.Ordinal)
+            && string.Equals(updatedContent, BuildManagerEditableContent(selected), StringComparison.Ordinal))
+        {
+            RefreshSelectionUi();
+            return;
+        }
+
+        _app.SaveNoteFromManager(selected, updatedTitle, updatedContent, selected.BackgroundColor);
+    }
+
+    private void UpdateSelectedNoteEditorUi()
+    {
+        Visibility readOnlyVisibility = _isSelectedNoteEditing ? Visibility.Collapsed : Visibility.Visible;
+        Visibility editVisibility = _isSelectedNoteEditing ? Visibility.Visible : Visibility.Collapsed;
+
+        SelectedTitleTextBlock.Visibility = readOnlyVisibility;
+        SelectedTitleEditor.Visibility = editVisibility;
+        SelectedPreviewScrollViewer.Visibility = readOnlyVisibility;
+        SelectedPreviewEditorBorder.Visibility = editVisibility;
+    }
+
+    private void BuildHiddenNoteDarknessPresetButtons()
+    {
+        HiddenNoteDarknessPresetPanel.Children.Clear();
+
+        foreach (DarknessPreset preset in HiddenNoteDarknessPresets)
+        {
+            WpfButton button = new()
+            {
+                Style = (Style)FindResource("InactiveDarknessPresetButtonStyle"),
+                Tag = preset.Factor,
+                ToolTip = preset.Label,
+                Background = new MediaSolidColorBrush(ParseBackgroundColor(preset.SwatchColor))
+            };
+            button.Click += HiddenNoteDarknessPresetButton_Click;
+            HiddenNoteDarknessPresetPanel.Children.Add(button);
+        }
+    }
+
+    private void HiddenNoteDarknessPresetButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isRefreshingUi || sender is not WpfButton button || button.Tag is not double factor)
+        {
+            return;
+        }
+
+        SetHiddenNoteDarknessPresetSelection(factor);
+        ApplyGlobalSettingsFromUi();
+    }
+
+    private double GetSelectedHiddenNoteDarknessFactor()
+    {
+        foreach (WpfButton button in HiddenNoteDarknessPresetPanel.Children.OfType<WpfButton>())
+        {
+            if (button.BorderThickness.Left >= 2 && button.Tag is double factor)
+            {
+                return factor;
+            }
+        }
+
+        return _app.Settings.HiddenNoteDarknessFactor;
+    }
+
+    private void SetHiddenNoteDarknessPresetSelection(double selectedFactor)
+    {
+        foreach (WpfButton button in HiddenNoteDarknessPresetPanel.Children.OfType<WpfButton>())
+        {
+            bool isSelected = button.Tag is double factor && Math.Abs(factor - selectedFactor) < 0.001;
+            button.BorderBrush = isSelected
+                ? new MediaSolidColorBrush(MediaColor.FromRgb(45, 48, 51))
+                : new MediaSolidColorBrush(MediaColor.FromRgb(216, 208, 195));
+            button.BorderThickness = isSelected ? new Thickness(2) : new Thickness(1);
+            button.Opacity = isSelected ? 1.0 : 0.82;
+        }
+    }
+
     private void SetBackgroundPresetButtonsEnabled(bool isEnabled, string? selectedColor)
     {
         foreach (WpfButton button in SelectedBackgroundPresetPanel.Children.OfType<WpfButton>())
@@ -646,7 +1040,7 @@ public partial class MainWindow : Window
             button.Opacity = isEnabled ? 1.0 : 0.4;
             button.BorderBrush = isSelected
                 ? new MediaSolidColorBrush(MediaColor.FromRgb(46, 42, 36))
-                : new MediaSolidColorBrush(MediaColor.FromRgb(205, 197, 184));
+                : new MediaSolidColorBrush(MediaColor.FromRgb(216, 208, 195));
             button.BorderThickness = isSelected ? new Thickness(2) : new Thickness(1);
         }
     }
@@ -658,10 +1052,56 @@ public partial class MainWindow : Window
 
         SelectedPreviewTextBlock.FontSize = contentFontSize;
         SelectedPreviewTextBlock.LineHeight = lineHeight;
+        SelectedContentEditor.FontSize = contentFontSize;
+        SelectedTitleEditor.FontSize = _app.Settings.TitleFontSize;
+        SelectedContentEditor.SetValue(Block.LineHeightProperty, lineHeight);
+        SelectedTitleEditor.SetValue(Block.LineHeightProperty, _app.Settings.TitleFontSize * _app.Settings.TitleLineSpacing);
 
-        double verticalPadding = SelectedPreviewScrollViewer.Padding.Top + SelectedPreviewScrollViewer.Padding.Bottom;
-        double borderThickness = SelectedPreviewBorder.BorderThickness.Top + SelectedPreviewBorder.BorderThickness.Bottom;
-        SelectedPreviewBorder.Height = (lineHeight * 5) + verticalPadding + borderThickness + 4;
+        double verticalPadding = SelectedContentEditor.Padding.Top + SelectedContentEditor.Padding.Bottom;
+        double borderThickness = SelectedPreviewEditorBorder.BorderThickness.Top + SelectedPreviewEditorBorder.BorderThickness.Bottom;
+        double previewHeight = (lineHeight * 5) + verticalPadding + borderThickness + 4;
+        SelectedPreviewScrollViewer.Height = previewHeight;
+        SelectedPreviewEditorBorder.Height = previewHeight;
+    }
+
+    private static string BuildManagerEditableContent(NoteDocument note)
+    {
+        return note.Content;
+    }
+
+    private static bool IsDescendantOf(DependencyObject? node, DependencyObject ancestor)
+    {
+        while (node is not null)
+        {
+            if (ReferenceEquals(node, ancestor))
+            {
+                return true;
+            }
+
+            node = GetParentDependencyObject(node);
+        }
+
+        return false;
+    }
+
+    private static DependencyObject? GetParentDependencyObject(DependencyObject node)
+    {
+        if (node is System.Windows.Media.Visual || node is System.Windows.Media.Media3D.Visual3D)
+        {
+            return System.Windows.Media.VisualTreeHelper.GetParent(node);
+        }
+
+        if (node is FrameworkContentElement frameworkContentElement)
+        {
+            return frameworkContentElement.Parent;
+        }
+
+        if (node is ContentElement contentElement)
+        {
+            return ContentOperations.GetParent(contentElement);
+        }
+
+        return null;
     }
 
     private static MediaColor ParseBackgroundColor(string colorValue)
@@ -750,11 +1190,139 @@ public partial class MainWindow : Window
         return years == 1 ? "1 year ago" : $"{years} years ago";
     }
 
+    private void SetNoteSortMode(NoteSortMode sortMode)
+    {
+        if (_noteSortMode == sortMode)
+        {
+            return;
+        }
+
+        _noteSortMode = sortMode;
+        UpdateSortModeButtons();
+        RebuildTiles(_selectedTileKey);
+        RefreshSelectionUi();
+    }
+
+    private void UpdateSortModeButtons()
+    {
+        UpdateSortModeButtonVisual(SortByModifiedButton, _noteSortMode == NoteSortMode.ModifiedAt);
+        UpdateSortModeButtonVisual(SortByCreatedButton, _noteSortMode == NoteSortMode.CreatedAt);
+        UpdateSortModeButtonVisual(SortByTitleButton, _noteSortMode == NoteSortMode.Title);
+    }
+
+    private void SetNoteFilterMode(NoteFilterMode filterMode)
+    {
+        if (_noteFilterMode == filterMode)
+        {
+            return;
+        }
+
+        _noteFilterMode = filterMode;
+        UpdateFilterButtons();
+        RebuildTiles(_selectedTileKey);
+        RefreshSelectionUi();
+    }
+
+    private void UpdateFilterButtons()
+    {
+        UpdateSortModeButtonVisual(FilterAllButton, _noteFilterMode == NoteFilterMode.All);
+        UpdateSortModeButtonVisual(FilterActiveButton, _noteFilterMode == NoteFilterMode.Active);
+        UpdateSortModeButtonVisual(FilterHiddenButton, _noteFilterMode == NoteFilterMode.Hidden);
+        UpdateSortModeButtonVisual(FilterTrashButton, _noteFilterMode == NoteFilterMode.Trash);
+    }
+
+    private static void UpdateSortModeButtonVisual(System.Windows.Controls.Button button, bool isSelected)
+    {
+        button.Background = isSelected
+            ? new MediaSolidColorBrush(MediaColor.FromRgb(255, 253, 248))
+            : new MediaSolidColorBrush(MediaColor.FromRgb(244, 241, 234));
+        button.Foreground = isSelected
+            ? new MediaSolidColorBrush(MediaColor.FromRgb(46, 42, 36))
+            : new MediaSolidColorBrush(MediaColor.FromRgb(95, 87, 74));
+        button.BorderBrush = new MediaSolidColorBrush(MediaColor.FromRgb(216, 208, 195));
+        button.BorderThickness = isSelected ? new Thickness(1.5) : new Thickness(1);
+    }
+
+    private bool IsBackupFolderLinked()
+    {
+        return _app.Settings.GoogleDriveFolderLinked &&
+               !string.IsNullOrWhiteSpace(_app.Settings.GoogleDriveBackupFolderPath) &&
+               Directory.Exists(_app.Settings.GoogleDriveBackupFolderPath);
+    }
+
+    private void UpdateQuickBackupButtonUi()
+    {
+        bool linked = IsBackupFolderLinked();
+
+        QuickBackupTextBlock.Text = linked ? "Backup" : "Setup Backup";
+        QuickBackupButton.ToolTip = linked
+            ? "Back up notes now"
+            : "Connect a backup folder";
+
+        QuickBackupButton.Background = linked
+            ? new MediaSolidColorBrush(MediaColor.FromRgb(255, 253, 248))
+            : new MediaSolidColorBrush(MediaColor.FromRgb(244, 241, 234));
+        QuickBackupButton.Foreground = linked
+            ? new MediaSolidColorBrush(MediaColor.FromRgb(46, 42, 36))
+            : new MediaSolidColorBrush(MediaColor.FromRgb(95, 87, 74));
+        QuickBackupButton.BorderBrush = linked
+            ? new MediaSolidColorBrush(MediaColor.FromRgb(186, 177, 161))
+            : new MediaSolidColorBrush(MediaColor.FromRgb(216, 208, 195));
+
+        QuickBackupArrowIcon.Visibility = linked ? Visibility.Visible : Visibility.Collapsed;
+        QuickBackupSettingsIcon.Visibility = linked ? Visibility.Collapsed : Visibility.Visible;
+        QuickBackupDoneIcon.Visibility = Visibility.Collapsed;
+    }
+
+    private void ShowQuickBackupStatus(string text, bool success)
+    {
+        _quickBackupStatusTimer.Stop();
+
+        QuickBackupTextBlock.Text = text;
+        QuickBackupButton.Background = new MediaSolidColorBrush(success
+            ? MediaColor.FromRgb(228, 245, 234)
+            : MediaColor.FromRgb(246, 223, 223));
+        QuickBackupButton.Foreground = new MediaSolidColorBrush(success
+            ? MediaColor.FromRgb(47, 112, 76)
+            : MediaColor.FromRgb(160, 68, 68));
+        QuickBackupButton.BorderBrush = new MediaSolidColorBrush(success
+            ? MediaColor.FromRgb(114, 178, 139)
+            : MediaColor.FromRgb(214, 94, 94));
+
+        QuickBackupArrowIcon.Visibility = Visibility.Collapsed;
+        QuickBackupSettingsIcon.Visibility = Visibility.Collapsed;
+        QuickBackupDoneIcon.Visibility = success ? Visibility.Visible : Visibility.Collapsed;
+
+        _quickBackupStatusTimer.Start();
+    }
+
+    private void UpdateFavoriteButtonUi(NoteDocument? selected)
+    {
+        bool canFavorite = selected is not null && !selected.IsBackup;
+        bool isFavorite = selected?.IsFavorite == true;
+
+        FavoriteToggleButton.IsEnabled = canFavorite;
+        FavoriteToggleButton.ToolTip = !canFavorite
+            ? "Favorites are available for active and hidden notes."
+            : isFavorite
+                ? "Remove from favorites"
+                : "Add to favorites";
+        FavoriteToggleButton.Background = canFavorite && isFavorite
+            ? new MediaSolidColorBrush(MediaColor.FromRgb(255, 249, 235))
+            : new MediaSolidColorBrush(MediaColor.FromRgb(250, 247, 240));
+        FavoriteToggleButton.BorderBrush = canFavorite && isFavorite
+            ? new MediaSolidColorBrush(MediaColor.FromRgb(224, 192, 102))
+            : new MediaSolidColorBrush(MediaColor.FromRgb(216, 208, 195));
+        FavoriteToggleButton.Foreground = new MediaSolidColorBrush(MediaColor.FromRgb(176, 138, 56));
+        FavoriteToggleFilledIcon.Visibility = isFavorite ? Visibility.Visible : Visibility.Collapsed;
+        FavoriteToggleOutlineIcon.Visibility = isFavorite ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     private static void UpdateTabButtonVisual(System.Windows.Controls.Button button, bool isActive, bool isLeft)
     {
         button.Background = isActive
-            ? new MediaSolidColorBrush(MediaColor.FromRgb(255, 253, 247))
-            : new MediaSolidColorBrush(MediaColor.FromRgb(221, 214, 200));
+            ? new MediaSolidColorBrush(MediaColor.FromRgb(255, 253, 248))
+            : new MediaSolidColorBrush(MediaColor.FromRgb(216, 208, 195));
         button.Foreground = isActive
             ? new MediaSolidColorBrush(MediaColor.FromRgb(46, 42, 36))
             : new MediaSolidColorBrush(MediaColor.FromRgb(110, 101, 89));
@@ -777,6 +1345,25 @@ public partial class MainWindow : Window
 
         public string Label { get; }
         public object Value { get; }
+
+        public override string ToString()
+        {
+            return Label;
+        }
+    }
+
+    private sealed class DarknessPreset
+    {
+        public DarknessPreset(string label, double factor, string swatchColor)
+        {
+            Label = label;
+            Factor = factor;
+            SwatchColor = swatchColor;
+        }
+
+        public string Label { get; }
+        public double Factor { get; }
+        public string SwatchColor { get; }
     }
 }
 

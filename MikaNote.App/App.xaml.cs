@@ -441,6 +441,17 @@ public partial class App : Application
         NotifyNotesChanged();
     }
 
+    public void SetFavorite(NoteDocument note, bool isFavorite)
+    {
+        if (_repository is null || note.IsBackup)
+        {
+            return;
+        }
+
+        _repository.SaveFavorite(note, isFavorite);
+        NotifyNotesChanged();
+    }
+
     public void DeleteNote(NoteDocument note)
     {
         if (_repository is null)
@@ -557,7 +568,8 @@ public partial class App : Application
         double contentFontSize,
         double titleLineSpacing,
         double contentLineSpacing,
-        string defaultBackgroundColor)
+        string defaultBackgroundColor,
+        double hiddenNoteDarknessFactor)
     {
         if (_repository is null)
         {
@@ -570,6 +582,7 @@ public partial class App : Application
         _settings.ContentFontSize = Math.Max(8, contentFontSize);
         _settings.TitleLineSpacing = Math.Max(1.0, titleLineSpacing);
         _settings.ContentLineSpacing = Math.Max(1.0, contentLineSpacing);
+        _settings.HiddenNoteDarknessFactor = Math.Clamp(hiddenNoteDarknessFactor, 0.76, 1.0);
         _settings.DefaultBackgroundColor = string.IsNullOrWhiteSpace(defaultBackgroundColor)
             ? "#FFF4A0"
             : defaultBackgroundColor;
@@ -580,6 +593,23 @@ public partial class App : Application
             window.ApplyGlobalSettings(_settings);
         }
 
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void UpdateGoogleDriveFolderSettings(
+        string backupFolderPath,
+        bool isLinked,
+        DateTimeOffset? linkedAt)
+    {
+        if (_repository is null)
+        {
+            return;
+        }
+
+        _settings.GoogleDriveBackupFolderPath = backupFolderPath?.Trim() ?? string.Empty;
+        _settings.GoogleDriveFolderLinked = isLinked;
+        _settings.GoogleDriveFolderLinkedAt = linkedAt;
+        _repository.SaveAppSettings(_settings);
         SettingsChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -604,6 +634,17 @@ public partial class App : Application
     public void NotifyNotesChanged()
     {
         NotesChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void ReloadNotesFromStorage()
+    {
+        foreach (NoteWindow window in _openWindows.ToList())
+        {
+            window.PrepareForDeletion();
+            window.Close();
+        }
+
+        LoadAndOpenAllNotes();
     }
 
     public void RefreshAllOpenNoteSurfaces()

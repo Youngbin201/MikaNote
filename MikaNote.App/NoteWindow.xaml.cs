@@ -2093,7 +2093,8 @@ public partial class NoteWindow : Window
             contentFontSize,
             app.Settings.TitleLineSpacing,
             app.Settings.ContentLineSpacing,
-            app.Settings.DefaultBackgroundColor);
+            app.Settings.DefaultBackgroundColor,
+            app.Settings.HiddenNoteDarknessFactor);
     }
 
     private void LineSpacingOption_Click(object sender, RoutedEventArgs e)
@@ -2132,7 +2133,8 @@ public partial class NoteWindow : Window
             app.Settings.ContentFontSize,
             titleLineSpacing,
             contentLineSpacing,
-            app.Settings.DefaultBackgroundColor);
+            app.Settings.DefaultBackgroundColor,
+            app.Settings.HiddenNoteDarknessFactor);
     }
 
     private void ColorOption_Click(object sender, RoutedEventArgs e)

@@ -19,10 +19,12 @@ public sealed class ManagerTileItem
     public ManagerTileActionKind ActionKind { get; init; }
     public bool IsSelected { get; init; }
     public bool IsAction => ActionKind != ManagerTileActionKind.None;
+    public bool IsBackup { get; init; }
     public string Title { get; init; } = string.Empty;
     public string PreviewText { get; init; } = string.Empty;
     public string RelativeTimeText { get; init; } = string.Empty;
     public string Badge { get; init; } = string.Empty;
+    public bool IsFavorite { get; init; }
     public MediaBrush BackgroundBrush { get; init; } = MediaBrushes.White;
     public MediaBrush TitleBrush { get; init; } = MediaBrushes.Black;
     public MediaBrush ContentBrush { get; init; } = MediaBrushes.Black;

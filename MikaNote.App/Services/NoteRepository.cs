@@ -193,6 +193,12 @@ public sealed class NoteRepository
         WriteLayout(note);
     }
 
+    public void SaveFavorite(NoteDocument note, bool isFavorite)
+    {
+        note.IsFavorite = isFavorite;
+        WriteLayout(note);
+    }
+
     public void DeleteNote(NoteDocument note)
     {
         string backupDirectory = GetBackupDirectoryPath();
@@ -253,7 +259,8 @@ public sealed class NoteRepository
             ModifiedAt = note.ModifiedAt,
             ContentFontSize = note.ContentFontSize,
             BackgroundColor = note.BackgroundColor,
-            Kind = note.Kind
+            Kind = note.Kind,
+            IsFavorite = note.IsFavorite
         };
 
         string json = JsonSerializer.Serialize(layout, new JsonSerializerOptions
@@ -324,6 +331,7 @@ public sealed class NoteRepository
             Kind = layout?.Kind ?? NoteKind.Standard,
             IsBackup = isBackup,
             IsHidden = isHidden,
+            IsFavorite = layout?.IsFavorite ?? false,
             CreatedAt = createdAt,
             ModifiedAt = modifiedAt,
             Left = layout?.Left ?? left,
@@ -574,5 +582,6 @@ public sealed class NoteRepository
         public double ContentFontSize { get; init; }
         public string? BackgroundColor { get; init; }
         public NoteKind? Kind { get; init; }
+        public bool IsFavorite { get; init; }
     }
 }
