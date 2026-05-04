@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MikaNote.App")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+54e52cdcf83f65a19b697fd678374d089d941f10")]
 [assembly: System.Reflection.AssemblyProductAttribute("MikaNote.App")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MikaNote.App")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

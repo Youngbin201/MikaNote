@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Admin\\Desktop\\MikaNote\\MikaNote.App\\MikaNote.App.csproj",
+      "projectUniqueName": "C:\\Users\\Admin\\Documents\\GitHub\\MikaNote\\MikaNote.App\\MikaNote.App.csproj",
       "projectName": "MikaNote.App",
-      "projectPath": "C:\\Users\\Admin\\Desktop\\MikaNote\\MikaNote.App\\MikaNote.App.csproj",
+      "projectPath": "C:\\Users\\Admin\\Documents\\GitHub\\MikaNote\\MikaNote.App\\MikaNote.App.csproj",
       "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Admin\\Desktop\\MikaNote\\MikaNote.App\\obj\\",
+      "outputPath": "C:\\Users\\Admin\\Documents\\GitHub\\MikaNote\\MikaNote.App\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"

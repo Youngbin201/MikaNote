@@ -14,6 +14,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = MikaNote.App
-build_property.ProjectDir = C:\Users\Admin\Desktop\MikaNote\MikaNote.App\
+build_property.ProjectDir = C:\Users\Admin\Documents\GitHub\MikaNote\MikaNote.App\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
