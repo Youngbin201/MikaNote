@@ -91,9 +91,9 @@ public partial class App : Application
             CreateAndOpenNewNote();
         }
 
-        if (Notes.Count == 0 && HiddenNotes.Count == 0 && BackupNotes.Count == 0)
+        if (Notes.Count == 0)
         {
-            CreateAndOpenNewNote();
+            ShowManagerWindow();
         }
         
         CloseWelcomeSplashWhenReady(splashWindow, splashShownAt);

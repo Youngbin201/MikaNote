@@ -398,13 +398,13 @@
         <Style x:Key="SortModeButtonStyle"
                TargetType="Button">
             <Setter Property="Height"
-                    Value="30" />
+                    Value="26" />
             <Setter Property="MinWidth"
-                    Value="78" />
+                    Value="66" />
             <Setter Property="Margin"
                     Value="0,0,4,0" />
             <Setter Property="Padding"
-                    Value="9,0,10,0" />
+                    Value="7,0,8,0" />
             <Setter Property="Background"
                     Value="#F4F1EA" />
             <Setter Property="Foreground"
@@ -414,7 +414,7 @@
             <Setter Property="BorderThickness"
                     Value="1" />
             <Setter Property="FontWeight"
-                    Value="SemiBold" />
+                    Value="Normal" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -456,9 +456,9 @@
                TargetType="Button"
                BasedOn="{StaticResource SortModeButtonStyle}">
             <Setter Property="MinWidth"
-                    Value="64" />
+                    Value="58" />
             <Setter Property="Padding"
-                    Value="9,0,10,0" />
+                    Value="7,0,8,0" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -499,9 +499,9 @@
         <Style x:Key="FavoriteIconButtonStyle"
                TargetType="Button">
             <Setter Property="Width"
-                    Value="32" />
+                    Value="28" />
             <Setter Property="Height"
-                    Value="32" />
+                    Value="28" />
             <Setter Property="Padding"
                     Value="0" />
             <Setter Property="Background"
@@ -1027,128 +1027,92 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Margin="0,0,0,12">
-                    <Grid VerticalAlignment="Center">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+                    <Border Margin="0,0,0,8"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderThickness="0">
+                        <Grid VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0"
-                                    Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <Grid Width="27"
-                                  Height="21"
-                                  Margin="0,2,7,0">
-                                <Path Fill="#FDFBFF"
-                                      Stroke="#CFC5EC"
-                                      StrokeThickness="0.85"
-                                      StrokeLineJoin="Round"
-                                      Data="M3.2,4.2 C5.2,3.1 7.6,2.9 11.5,3.7 V15 C8.2,14.2 5.8,14.4 3.2,15.7 Z" />
-                                <Path Fill="#F9F6FF"
-                                      Stroke="#CFC5EC"
-                                      StrokeThickness="0.85"
-                                      StrokeLineJoin="Round"
-                                      Data="M23.8,4.2 C21.8,3.1 19.4,2.9 15.5,3.7 V15 C18.8,14.2 21.2,14.4 23.8,15.7 Z" />
-                                <Path Stroke="#D6CCEE"
-                                      StrokeThickness="0.9"
-                                      StrokeStartLineCap="Round"
-                                      StrokeEndLineCap="Round"
-                                      Data="M13.5,3.5 V15.2" />
-                                <Path Stroke="#8FCBFF"
-                                      StrokeThickness="1.35"
-                                      StrokeStartLineCap="Round"
-                                      StrokeEndLineCap="Round"
-                                      Data="M3.8,16.1 C6.7,15 9.3,15 13.5,15.9 C17.7,15 20.3,15 23.2,16.1" />
-                                <Path Stroke="#E5DCF6"
-                                      StrokeThickness="0.75"
-                                      StrokeStartLineCap="Round"
-                                      StrokeEndLineCap="Round"
-                                      Data="M5.3,6.2 C6.8,5.7 8.4,5.6 10,5.9 M17,5.9 C18.6,5.6 20.2,5.7 21.7,6.2" />
-                                <Path Stroke="#EDE8F8"
-                                      StrokeThickness="0.75"
-                                      StrokeStartLineCap="Round"
-                                      StrokeEndLineCap="Round"
-                                      Data="M5.5,8.4 C6.9,8 8.4,7.9 9.9,8.1 M17.1,8.1 C18.6,7.9 20.1,8 21.5,8.4" />
-                            </Grid>
-                            <TextBlock Margin="0,-2,0,0"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Foreground="#2E2A24"
-                                       Text="Notes" />
-                        </StackPanel>
-
-                        <Button x:Name="QuickBackupButton"
-                                Grid.Column="1"
-                                Style="{StaticResource PanelButtonStyle}"
-                                Height="32"
-                                MinWidth="112"
-                                Padding="15,0"
-                                HorizontalAlignment="Right"
-                                ToolTip="Backup notes"
-                                Click="QuickBackupButton_Click">
-                            <StackPanel Orientation="Horizontal">
-                                <Grid x:Name="QuickBackupIcon"
-                                      Width="14"
-                                      Height="14"
-                                      Margin="0,0,7,0">
-                                    <Path x:Name="QuickBackupArrowIcon"
-                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                          StrokeThickness="1.2"
+                            <StackPanel Grid.Column="0"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <Grid Width="27"
+                                      Height="21"
+                                      Margin="0,2,7,0">
+                                    <Path Fill="#FDFBFF"
+                                          Stroke="#CFC5EC"
+                                          StrokeThickness="0.85"
+                                          StrokeLineJoin="Round"
+                                          Data="M3.2,4.2 C5.2,3.1 7.6,2.9 11.5,3.7 V15 C8.2,14.2 5.8,14.4 3.2,15.7 Z" />
+                                    <Path Fill="#F9F6FF"
+                                          Stroke="#CFC5EC"
+                                          StrokeThickness="0.85"
+                                          StrokeLineJoin="Round"
+                                          Data="M23.8,4.2 C21.8,3.1 19.4,2.9 15.5,3.7 V15 C18.8,14.2 21.2,14.4 23.8,15.7 Z" />
+                                    <Path Stroke="#D6CCEE"
+                                          StrokeThickness="0.9"
                                           StrokeStartLineCap="Round"
                                           StrokeEndLineCap="Round"
-                                          StrokeLineJoin="Round"
-                                          Data="M7,2 V10 M7,10 L4.3,7.3 M7,10 L9.7,7.3 M2.4,12 H11.6" />
-                                    <Path x:Name="QuickBackupSettingsIcon"
-                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                          StrokeThickness="1.15"
+                                          Data="M13.5,3.5 V15.2" />
+                                    <Path Stroke="#8FCBFF"
+                                          StrokeThickness="1.35"
                                           StrokeStartLineCap="Round"
                                           StrokeEndLineCap="Round"
-                                          StrokeLineJoin="Round"
-                                          Visibility="Collapsed"
-                                          Data="M7,1.7 V3.1 M7,10.9 V12.3 M1.7,7 H3.1 M10.9,7 H12.3 M3.3,3.3 L4.3,4.3 M9.7,9.7 L10.7,10.7 M10.7,3.3 L9.7,4.3 M4.3,9.7 L3.3,10.7 M5.1,7 C5.1,6 6,5.1 7,5.1 C8,5.1 8.9,6 8.9,7 C8.9,8 8,8.9 7,8.9 C6,8.9 5.1,8 5.1,7 Z" />
-                                    <Path x:Name="QuickBackupDoneIcon"
-                                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                          StrokeThickness="1.45"
+                                          Data="M3.8,16.1 C6.7,15 9.3,15 13.5,15.9 C17.7,15 20.3,15 23.2,16.1" />
+                                    <Path Stroke="#E5DCF6"
+                                          StrokeThickness="0.75"
                                           StrokeStartLineCap="Round"
                                           StrokeEndLineCap="Round"
-                                          StrokeLineJoin="Round"
-                                          Visibility="Collapsed"
-                                          Data="M2.4,7.2 L5.6,10.3 L11.8,3.8" />
+                                          Data="M5.3,6.2 C6.8,5.7 8.4,5.6 10,5.9 M17,5.9 C18.6,5.6 20.2,5.7 21.7,6.2" />
+                                    <Path Stroke="#EDE8F8"
+                                          StrokeThickness="0.75"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          Data="M5.5,8.4 C6.9,8 8.4,7.9 9.9,8.1 M17.1,8.1 C18.6,7.9 20.1,8 21.5,8.4" />
                                 </Grid>
-                                <TextBlock x:Name="QuickBackupTextBlock"
-                                           VerticalAlignment="Center"
-                                           Text="Backup" />
+                                <TextBlock Margin="0,-2,0,0"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#2E2A24"
+                                           Text="Notes" />
                             </StackPanel>
-                        </Button>
-                    </Grid>
-                    <Grid Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
 
-                        <WrapPanel Grid.Column="0"
-                                   HorizontalAlignment="Left"
-                                   VerticalAlignment="Center">
+                            <WrapPanel Grid.Column="1"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center">
+                                <StackPanel Margin="0,0,12,0"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Margin="0,0,7,0"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#7A7063"
+                                               Text="Sort by" />
                                     <Button x:Name="SortByModifiedButton"
                                             Style="{StaticResource SortModeButtonStyle}"
                                             ToolTip="Sort by last modified"
                                             Click="SortByModifiedButton_Click">
                                         <StackPanel Orientation="Horizontal">
-                                            <Grid Width="13"
-                                                  Height="13"
-                                                  Margin="0,0,5,0">
+                                            <Grid Width="12"
+                                                  Height="12"
+                                                  Margin="0,0,4,0">
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.25"
+                                                      StrokeThickness="1.15"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
-                                                      Data="M2,4 H11 M2,7 H8.5 M2,10 H6.5" />
+                                                      Data="M2,3.7 H10.5 M2,6.4 H8 M2,9.1 H6.2" />
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.25"
+                                                      StrokeThickness="1.15"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       StrokeLineJoin="Round"
-                                                      Data="M10,2.2 L11.8,4 L8.1,7.7 L6.3,8.1 L6.7,6.3 Z" />
+                                                      Data="M9.3,2 L10.9,3.6 L7.5,7 L5.9,7.4 L6.3,5.8 Z" />
                                             </Grid>
                                             <TextBlock VerticalAlignment="Center"
                                                        Text="Modified" />
@@ -1159,22 +1123,22 @@
                                             ToolTip="Sort by created date"
                                             Click="SortByCreatedButton_Click">
                                         <StackPanel Orientation="Horizontal">
-                                            <Grid Width="13"
-                                                  Height="13"
-                                                  Margin="0,0,5,0">
-                                                <Rectangle Width="10"
-                                                           Height="8.5"
-                                                           RadiusX="2"
-                                                           RadiusY="2"
+                                            <Grid Width="12"
+                                                  Height="12"
+                                                  Margin="0,0,4,0">
+                                                <Rectangle Width="9.2"
+                                                           Height="8"
+                                                           RadiusX="1.8"
+                                                           RadiusY="1.8"
                                                            Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                           StrokeThickness="1.25"
+                                                           StrokeThickness="1.15"
                                                            HorizontalAlignment="Center"
                                                            VerticalAlignment="Bottom" />
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.25"
+                                                      StrokeThickness="1.15"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
-                                                      Data="M4,1.6 V4 M9,1.6 V4 M2.4,5 H11" />
+                                                      Data="M3.6,1.5 V3.8 M8.4,1.5 V3.8 M2.3,4.7 H10.7" />
                                             </Grid>
                                             <TextBlock VerticalAlignment="Center"
                                                        Text="Created" />
@@ -1185,54 +1149,58 @@
                                             ToolTip="Sort alphabetically"
                                             Click="SortByTitleButton_Click">
                                         <StackPanel Orientation="Horizontal">
-                                            <Grid Width="13"
-                                                  Height="13"
-                                                  Margin="0,0,5,0">
+                                            <Grid Width="12"
+                                                  Height="12"
+                                                  Margin="0,0,4,0">
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.25"
+                                                      StrokeThickness="1.15"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       StrokeLineJoin="Round"
-                                                      Data="M2.5,10.7 L5.3,2.7 L8.1,10.7 M3.7,8 H6.9" />
+                                                      Data="M2.2,10 L4.9,2.4 L7.6,10 M3.4,7.5 H6.4" />
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.25"
+                                                      StrokeThickness="1.15"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       StrokeLineJoin="Round"
-                                                      Data="M10.8,3 V10.5 M10.8,10.5 L8.9,8.6 M10.8,10.5 L12.7,8.6" />
+                                                      Data="M9.7,2.8 V10 M9.7,10 L8.1,8.4 M9.7,10 L11.3,8.4" />
                                             </Grid>
                                             <TextBlock VerticalAlignment="Center"
                                                        Text="A-Z" />
                                         </StackPanel>
                                     </Button>
-                        </WrapPanel>
+                                </StackPanel>
 
-                        <WrapPanel Grid.Column="1"
-                                   Margin="12,0,0,0"
-                                   HorizontalAlignment="Right"
-                                   VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Margin="0,0,7,0"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#7A7063"
+                                               Text="View" />
                                     <Button x:Name="FilterAllButton"
                                             Style="{StaticResource FilterModeButtonStyle}"
                                             ToolTip="Show all notes"
                                             Click="FilterAllButton_Click">
                                         <StackPanel Orientation="Horizontal">
-                                            <Grid Width="13"
-                                                  Height="13">
+                                            <Grid Width="12"
+                                                  Height="12">
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.1"
+                                                      StrokeThickness="1.05"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       StrokeLineJoin="Round"
-                                                      Data="M2.2,5 L7,2.4 L11.8,5 L7,7.7 Z" />
+                                                      Data="M2,4.7 L6,2.4 L10,4.7 L6,7 Z" />
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.1"
+                                                      StrokeThickness="1.05"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       StrokeLineJoin="Round"
                                                       Opacity="0.72"
-                                                      Data="M2.2,7.8 L7,10.4 L11.8,7.8 M2.2,10.1 L7,12.6 L11.8,10.1" />
+                                                      Data="M2,7.2 L6,9.5 L10,7.2 M2,9.3 L6,11.4 L10,9.3" />
                                             </Grid>
-                                            <TextBlock Margin="5,0,0,0"
+                                            <TextBlock Margin="4,0,0,0"
                                                        VerticalAlignment="Center"
                                                        Text="All" />
                                         </StackPanel>
@@ -1242,22 +1210,22 @@
                                             ToolTip="Show active notes"
                                             Click="FilterActiveButton_Click">
                                         <StackPanel Orientation="Horizontal">
-                                            <Grid Width="13"
-                                                  Height="13">
+                                            <Grid Width="12"
+                                                  Height="12">
+                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.05"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      StrokeLineJoin="Round"
+                                                      Data="M2.2,10 V3.9 C3.8,3 5.5,3 7.5,3.6 V9.8 C5.6,9.2 3.8,9.3 2.2,10 Z" />
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                                       StrokeThickness="1.1"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       StrokeLineJoin="Round"
-                                                      Data="M2.4,10.8 V4 C4.1,3 6,3 8.1,3.6 V10.5 C6,9.9 4.1,10 2.4,10.8 Z" />
-                                                <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.15"
-                                                      StrokeStartLineCap="Round"
-                                                      StrokeEndLineCap="Round"
-                                                      StrokeLineJoin="Round"
-                                                      Data="M8.8,5 L10.2,6.4 L12.5,3.8" />
+                                                      Data="M8.1,4.7 L9.4,6 L11.5,3.6" />
                                             </Grid>
-                                            <TextBlock Margin="5,0,0,0"
+                                            <TextBlock Margin="4,0,0,0"
                                                        VerticalAlignment="Center"
                                                        Text="Active" />
                                         </StackPanel>
@@ -1267,21 +1235,21 @@
                                             ToolTip="Show hidden notes"
                                             Click="FilterHiddenButton_Click">
                                         <StackPanel Orientation="Horizontal">
-                                            <Grid Width="13"
-                                                  Height="13">
+                                            <Grid Width="12"
+                                                  Height="12">
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.15"
+                                                      StrokeThickness="1.1"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       StrokeLineJoin="Round"
-                                                      Data="M1.6,6.5 C3,4.4 4.8,3.4 6.5,3.4 C8.2,3.4 10,4.4 11.4,6.5 C10,8.6 8.2,9.6 6.5,9.6 C4.8,9.6 3,8.6 1.6,6.5 Z" />
+                                                      Data="M1.5,6 C2.8,4.1 4.4,3.2 6,3.2 C7.6,3.2 9.2,4.1 10.5,6 C9.2,7.9 7.6,8.8 6,8.8 C4.4,8.8 2.8,7.9 1.5,6 Z" />
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.25"
+                                                      StrokeThickness="1.2"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
-                                                      Data="M2.4,11.2 L10.8,1.8" />
+                                                      Data="M2.3,10.4 L9.9,1.8" />
                                             </Grid>
-                                            <TextBlock Margin="5,0,0,0"
+                                            <TextBlock Margin="4,0,0,0"
                                                        VerticalAlignment="Center"
                                                        Text="Hidden" />
                                         </StackPanel>
@@ -1292,28 +1260,83 @@
                                             ToolTip="Show trash notes"
                                             Click="FilterTrashButton_Click">
                                         <StackPanel Orientation="Horizontal">
-                                            <Grid Width="13"
-                                                  Height="13">
+                                            <Grid Width="12"
+                                                  Height="12">
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="1.1"
+                                                      StrokeThickness="1.05"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       StrokeLineJoin="Round"
-                                                      Data="M1.9,4 H11.1 M4.6,4 V2.4 H8.4 V4 M3.2,5.1 L3.8,11.7 H9.2 L9.8,5.1 Z" />
+                                                      Data="M1.8,3.8 H10.2 M4.3,3.8 V2.3 H7.7 V3.8 M3,4.9 L3.6,10.8 H8.4 L9,4.9 Z" />
                                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                      StrokeThickness="0.95"
+                                                      StrokeThickness="0.9"
                                                       StrokeStartLineCap="Round"
                                                       StrokeEndLineCap="Round"
                                                       Opacity="0.72"
-                                                      Data="M5.2,6.4 V9.9 M6.5,6.4 V9.9 M7.8,6.4 V9.9" />
+                                                      Data="M5,6.1 V9.2 M6,6.1 V9.2 M7,6.1 V9.2" />
                                             </Grid>
-                                            <TextBlock Margin="5,0,0,0"
+                                            <TextBlock Margin="4,0,0,0"
                                                        VerticalAlignment="Center"
                                                        Text="Trash" />
                                         </StackPanel>
                                     </Button>
-                        </WrapPanel>
-                    </Grid>
+                                </StackPanel>
+                            </WrapPanel>
+
+                            <StackPanel Grid.Column="2"
+                                        Margin="14,0,0,0"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <Button x:Name="QuickBackupButton"
+                                        Width="28"
+                                        Height="28"
+                                        Margin="0,-1,0,0"
+                                        Padding="0"
+                                        Style="{StaticResource PanelButtonStyle}"
+                                        ToolTip="Backup notes"
+                                        Click="QuickBackupButton_Click">
+                                    <Grid x:Name="QuickBackupIcon"
+                                          Width="15"
+                                          Height="15">
+                                        <Path x:Name="QuickBackupArrowIcon"
+                                              Fill="Transparent"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              StrokeThickness="1.15"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Data="M2.3,2.1 H10.7 L12.7,4.1 V12.8 H2.3 Z M4.2,2.1 V5.6 H9.6 V2.1 M4.5,9.1 H10.5 V12.8 H4.5 Z" />
+                                        <Path x:Name="QuickBackupSettingsIcon"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              StrokeThickness="1.1"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Visibility="Collapsed"
+                                              Data="M2.3,2.1 H10.7 L12.7,4.1 V12.8 H2.3 Z M4.2,2.1 V5.6 H9.6 V2.1 M4.5,9.1 H10.5 V12.8 H4.5 Z" />
+                                        <Path x:Name="QuickBackupDoneIcon"
+                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              StrokeThickness="1.65"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Visibility="Collapsed"
+                                              Data="M2.4,7.8 L5.8,11 L12.8,3.8" />
+                                    </Grid>
+                                    <Button.RenderTransform>
+                                        <ScaleTransform x:Name="QuickBackupButtonScale"
+                                                        CenterX="14"
+                                                        CenterY="14"
+                                                        ScaleX="1"
+                                                        ScaleY="1" />
+                                    </Button.RenderTransform>
+                                </Button>
+                                <TextBlock x:Name="QuickBackupTextBlock"
+                                           Visibility="Collapsed"
+                                           Text="Backup" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1"
@@ -1499,9 +1522,9 @@
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Top"
                                     ToolTip="Favorite note"
-                                    Click="FavoriteToggleButton_Click">
-                                <Grid Width="16"
-                                      Height="16">
+                            Click="FavoriteToggleButton_Click">
+                                <Grid Width="14"
+                                      Height="14">
                                     <Path x:Name="FavoriteToggleOutlineIcon"
                                           Stretch="Fill"
                                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
@@ -1693,9 +1716,34 @@
                                            Text="Default Background" />
                                 <ComboBox x:Name="GlobalDefaultBackgroundColorComboBox"
                                           Style="{StaticResource ManagerComboBoxStyle}"
-                                          DisplayMemberPath="Label"
+                                          HorizontalContentAlignment="Left"
                                           SelectedValuePath="Value"
-                                          SelectionChanged="GlobalFontSetting_Changed" />
+                                          SelectionChanged="GlobalFontSetting_Changed">
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="HorizontalContentAlignment"
+                                                    Value="Left" />
+                                            <Setter Property="Padding"
+                                                    Value="8,4" />
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Width="14"
+                                                        Height="14"
+                                                        Margin="0,0,8,0"
+                                                        VerticalAlignment="Center"
+                                                        Background="{Binding SwatchColor}"
+                                                        BorderBrush="#CFC6B7"
+                                                        BorderThickness="1"
+                                                        CornerRadius="4" />
+                                                <TextBlock VerticalAlignment="Center"
+                                                           Text="{Binding Label}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
                             </StackPanel>
 
                             <StackPanel Margin="0,10,0,0">

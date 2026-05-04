@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using WpfButton = System.Windows.Controls.Button;
 using MessageBox = System.Windows.MessageBox;
@@ -66,21 +67,21 @@ public partial class MainWindow : Window
 
     private static readonly PresetOption[] BackgroundPresets =
     {
-        new("Warm Yellow", "#FFF4A0"),
-        new("Peach Cream", "#F9DCC4"),
-        new("Soft Apricot", "#FEC89A"),
-        new("Blush Sand", "#FBC4AB"),
-        new("Apricot", "#FFD6A5"),
-        new("Rose", "#FFB4A2"),
-        new("Butter", "#FAEDCB"),
-        new("Mint Fog", "#C9E4DE"),
-        new("Sage Paper", "#D8E2DC"),
-        new("Mint", "#CDEAC0"),
-        new("Powder Blue", "#BDE0FE"),
-        new("Sky", "#A9DEF9"),
-        new("Lavender", "#E4C1F9"),
-        new("Graphite", "#3A3A3A"),
-        new("White", "#FFFFFF")
+        new("Warm Yellow", "#FFF4A0", "#FFF4A0"),
+        new("Peach Cream", "#F9DCC4", "#F9DCC4"),
+        new("Soft Apricot", "#FEC89A", "#FEC89A"),
+        new("Blush Sand", "#FBC4AB", "#FBC4AB"),
+        new("Apricot", "#FFD6A5", "#FFD6A5"),
+        new("Rose", "#FFB4A2", "#FFB4A2"),
+        new("Butter", "#FAEDCB", "#FAEDCB"),
+        new("Mint Fog", "#C9E4DE", "#C9E4DE"),
+        new("Sage Paper", "#D8E2DC", "#D8E2DC"),
+        new("Mint", "#CDEAC0", "#CDEAC0"),
+        new("Powder Blue", "#BDE0FE", "#BDE0FE"),
+        new("Sky", "#A9DEF9", "#A9DEF9"),
+        new("Lavender", "#E4C1F9", "#E4C1F9"),
+        new("Graphite", "#3A3A3A", "#3A3A3A"),
+        new("White", "#FFFFFF", "#FFFFFF")
     };
 
     private static readonly DarknessPreset[] HiddenNoteDarknessPresets =
@@ -108,7 +109,7 @@ public partial class MainWindow : Window
 
         _quickBackupStatusTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(2.2)
+            Interval = TimeSpan.FromSeconds(1.1)
         };
         _quickBackupStatusTimer.Tick += (_, _) =>
         {
@@ -1269,8 +1270,8 @@ public partial class MainWindow : Window
             ? new MediaSolidColorBrush(MediaColor.FromRgb(186, 177, 161))
             : new MediaSolidColorBrush(MediaColor.FromRgb(216, 208, 195));
 
-        QuickBackupArrowIcon.Visibility = linked ? Visibility.Visible : Visibility.Collapsed;
-        QuickBackupSettingsIcon.Visibility = linked ? Visibility.Collapsed : Visibility.Visible;
+        QuickBackupArrowIcon.Visibility = Visibility.Visible;
+        QuickBackupSettingsIcon.Visibility = Visibility.Collapsed;
         QuickBackupDoneIcon.Visibility = Visibility.Collapsed;
     }
 
@@ -1289,9 +1290,23 @@ public partial class MainWindow : Window
             ? MediaColor.FromRgb(114, 178, 139)
             : MediaColor.FromRgb(214, 94, 94));
 
-        QuickBackupArrowIcon.Visibility = Visibility.Collapsed;
+        QuickBackupArrowIcon.Visibility = success ? Visibility.Collapsed : Visibility.Visible;
         QuickBackupSettingsIcon.Visibility = Visibility.Collapsed;
         QuickBackupDoneIcon.Visibility = success ? Visibility.Visible : Visibility.Collapsed;
+
+        if (success)
+        {
+            DoubleAnimation popAnimation = new()
+            {
+                From = 1.0,
+                To = 1.12,
+                Duration = TimeSpan.FromMilliseconds(120),
+                AutoReverse = true,
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            QuickBackupButtonScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, popAnimation);
+            QuickBackupButtonScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, popAnimation);
+        }
 
         _quickBackupStatusTimer.Start();
     }
@@ -1337,14 +1352,16 @@ public partial class MainWindow : Window
 
     private sealed class PresetOption
     {
-        public PresetOption(string label, object value)
+        public PresetOption(string label, object value, string? swatchColor = null)
         {
             Label = label;
             Value = value;
+            SwatchColor = swatchColor;
         }
 
         public string Label { get; }
         public object Value { get; }
+        public string? SwatchColor { get; }
 
         public override string ToString()
         {

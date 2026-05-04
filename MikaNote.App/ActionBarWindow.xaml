@@ -23,6 +23,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Button x:Name="NewNoteButton"
@@ -126,8 +127,38 @@
                 </Grid>
             </Button>
 
-            <Button x:Name="ManagerButton"
+            <Button x:Name="CollapseContentButton"
                     Grid.Column="4"
+                    Margin="0,3,4,3"
+                    Width="30"
+                    Padding="0"
+                    Foreground="White"
+                    Background="#4A4A4A"
+                    BorderBrush="#686868"
+                    ToolTip="Collapse content"
+                    Visibility="Collapsed">
+                <Grid Width="13"
+                      Height="13">
+                    <Path x:Name="CollapseContentUpIcon"
+                          Stroke="White"
+                          StrokeThickness="1.8"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Data="M2,8 L6.5,4 L11,8" />
+                    <Path x:Name="CollapseContentDownIcon"
+                          Stroke="White"
+                          StrokeThickness="1.8"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Visibility="Collapsed"
+                          Data="M2,5 L6.5,9 L11,5" />
+                </Grid>
+            </Button>
+
+            <Button x:Name="ManagerButton"
+                    Grid.Column="5"
                     Margin="0,3,4,3"
                     Width="34"
                     Padding="0"
@@ -146,7 +177,7 @@
             </Button>
 
             <Button x:Name="SaveButton"
-                    Grid.Column="4"
+                    Grid.Column="5"
                     Margin="0,3,4,3"
                     Padding="8,0"
                     Content="Save"
@@ -156,7 +187,7 @@
                     Visibility="Collapsed" />
 
             <Button x:Name="CloseButton"
-                    Grid.Column="5"
+                    Grid.Column="6"
                     Width="30"
                     Margin="0,3,2,3"
                     Content="X"

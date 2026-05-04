@@ -47,7 +47,8 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="30" />
-                <RowDefinition Height="*" />
+                <RowDefinition x:Name="BodyRowDefinition"
+                               Height="*" />
             </Grid.RowDefinitions>
 
             <Popup x:Name="ActionPopup"
@@ -538,6 +539,15 @@
                          PreviewMouseLeftButtonDown="ContentEditor_PreviewMouseLeftButtonDown"
                          VerticalScrollBarVisibility="Auto"
                          HorizontalScrollBarVisibility="Disabled" />
+
+                <RichTextBox x:Name="FormattedContentEditor"
+                             Margin="0"
+                             Padding="10,8"
+                             Visibility="Collapsed"
+                             AcceptsTab="True"
+                             BorderThickness="1"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Disabled" />
 
                 <ScrollViewer x:Name="TodoEditorScrollViewer"
                               Margin="8"

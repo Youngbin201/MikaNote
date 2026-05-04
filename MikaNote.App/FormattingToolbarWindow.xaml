@@ -1,0 +1,116 @@
+<Window x:Class="MikaNote.App.FormattingToolbarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        SizeToContent="Manual"
+        Width="42"
+        Height="217"
+        Background="#00FFFFFF"
+        AllowsTransparency="True">
+    <Border x:Name="FormattingRootBorder"
+            Width="42"
+            Height="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Height}"
+            Background="#2A2A2A"
+            BorderBrush="#1E1E1E"
+            BorderThickness="1"
+            Padding="5">
+        <StackPanel>
+            <Button x:Name="CodeViewToggleButton"
+                    Height="28"
+                    Margin="0,0,0,8"
+                    Padding="0"
+                    Foreground="White"
+                    Background="#4A4A4A"
+                    BorderBrush="#686868"
+                    ToolTip="Code view">
+                <TextBlock Text="&lt;/&gt;"
+                           FontSize="10"
+                           FontWeight="SemiBold" />
+            </Button>
+            <Button x:Name="BoldButton"
+                    Height="28"
+                    Margin="0,0,0,5"
+                    Padding="0"
+                    FontWeight="Bold"
+                    Content="B"
+                    Foreground="White"
+                    Background="#4A4A4A"
+                    BorderBrush="#686868"
+                    ToolTip="Bold" />
+            <Button x:Name="ItalicButton"
+                    Height="28"
+                    Margin="0,0,0,5"
+                    Padding="0"
+                    FontStyle="Italic"
+                    Content="I"
+                    Foreground="White"
+                    Background="#4A4A4A"
+                    BorderBrush="#686868"
+                    ToolTip="Italic" />
+            <Button x:Name="UnderlineButton"
+                    Height="28"
+                    Margin="0,0,0,5"
+                    Padding="0"
+                    Foreground="White"
+                    Background="#4A4A4A"
+                    BorderBrush="#686868"
+                    ToolTip="Underline">
+                <TextBlock Text="U"
+                           TextDecorations="Underline" />
+            </Button>
+            <Button x:Name="StrikeButton"
+                    Height="28"
+                    Margin="0,0,0,5"
+                    Padding="0"
+                    Foreground="White"
+                    Background="#4A4A4A"
+                    BorderBrush="#686868"
+                    ToolTip="Strikethrough">
+                <TextBlock Text="S"
+                           TextDecorations="Strikethrough" />
+            </Button>
+            <Button x:Name="BulletButton"
+                    Height="28"
+                    Padding="0"
+                    Foreground="White"
+                    Background="#4A4A4A"
+                    BorderBrush="#686868"
+                    ToolTip="Bullet list">
+                <Grid Width="16"
+                      Height="14">
+                    <Ellipse Width="3"
+                             Height="3"
+                             HorizontalAlignment="Left"
+                             VerticalAlignment="Top"
+                             Margin="1,2,0,0"
+                             Fill="White" />
+                    <Ellipse Width="3"
+                             Height="3"
+                             HorizontalAlignment="Left"
+                             VerticalAlignment="Bottom"
+                             Margin="1,0,0,2"
+                             Fill="White" />
+                    <Rectangle Width="9"
+                               Height="1.4"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Top"
+                               Margin="0,2.8,0,0"
+                               RadiusX="0.7"
+                               RadiusY="0.7"
+                               Fill="White" />
+                    <Rectangle Width="9"
+                               Height="1.4"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Bottom"
+                               Margin="0,0,0,2.8"
+                               RadiusX="0.7"
+                               RadiusY="0.7"
+                               Fill="White" />
+                </Grid>
+            </Button>
+        </StackPanel>
+    </Border>
+</Window>
