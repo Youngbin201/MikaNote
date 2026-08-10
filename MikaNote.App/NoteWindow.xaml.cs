@@ -1137,6 +1137,8 @@ public partial class NoteWindow : Window
         TodoEditorPanel.Children.Clear();
         TodoOrganizer.ItemsPanel.Children.Clear();
 
+        TodoOrganizer.ItemsPanel.Children.Add(CreateTodoOrganizerAddButton(0, "Add item at top"));
+
         for (int index = 0; index < _todoEditItems.Count; index++)
         {
             TodoEditorPanel.Children.Add(CreateTodoEditorRow(index));
@@ -1144,7 +1146,7 @@ public partial class NoteWindow : Window
         }
 
         TodoEditorPanel.Children.Add(CreateTodoAddButton());
-        TodoOrganizer.ItemsPanel.Children.Add(CreateTodoOrganizerAddButton());
+        TodoOrganizer.ItemsPanel.Children.Add(CreateTodoOrganizerAddButton(_todoEditItems.Count, "Add item at bottom"));
         UpdateTodoOrganizerState();
     }
 
@@ -1290,11 +1292,12 @@ public partial class NoteWindow : Window
         return rowBorder;
     }
 
-    private Button CreateTodoOrganizerAddButton()
+    private Button CreateTodoOrganizerAddButton(int insertIndex, string toolTip)
     {
         Button addButton = new()
         {
             Content = "+",
+            ToolTip = toolTip,
             Height = 26,
             Margin = new Thickness(0, 0, 0, 0),
             HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
@@ -1304,7 +1307,7 @@ public partial class NoteWindow : Window
             BorderThickness = new Thickness(1),
             FontSize = 13,
             FontWeight = FontWeights.Normal,
-            Tag = _todoEditItems.Count
+            Tag = insertIndex
         };
         addButton.PreviewMouseLeftButtonDown += TodoOrganizerInternalControl_PreviewMouseLeftButtonDown;
         addButton.Click += TodoAddButton_Click;
@@ -1471,7 +1474,7 @@ public partial class NoteWindow : Window
         double organizerLeft = Left - TodoOrganizer.Width - 8;
         double organizerTop = Top + TitleAreaRoot.ActualHeight;
         double rowHeight = 30;
-        double desiredHeight = (_todoEditItems.Count * rowHeight) + rowHeight + 38;
+        double desiredHeight = (_todoEditItems.Count * rowHeight) + (rowHeight * 2) + 38;
         double maxHeight = Math.Max(80, SystemParameters.WorkArea.Bottom - organizerTop - 10);
         double organizerHeight = Math.Min(maxHeight, Math.Max(48, desiredHeight));
         TodoOrganizer.ShowAt(organizerLeft, organizerTop, organizerHeight);
