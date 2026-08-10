@@ -1,8 +1,8 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -19,7 +19,6 @@ using Panel = System.Windows.Controls.Panel;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using Cursors = System.Windows.Input.Cursors;
-using Size = System.Windows.Size;
 using Point = System.Windows.Point;
 using ColorConverter = System.Windows.Media.ColorConverter;
 
@@ -44,9 +43,18 @@ internal enum StickyTextFormat
 public partial class NoteWindow : Window
 {
     private static readonly Regex UrlRegex = new(@"((https?://|www\.)[^\s]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly DependencyProperty HasExplicitUnderlineProperty = DependencyProperty.RegisterAttached(
+        "HasExplicitUnderline",
+        typeof(bool),
+        typeof(NoteWindow),
+        new PropertyMetadata(false));
 
     private const int WM_SYSCOMMAND = 0x0112;
     private const int WM_NCLBUTTONDBLCLK = 0x00A3;
+    private const int WM_IME_STARTCOMPOSITION = 0x010D;
+    private const int WM_IME_COMPOSITION = 0x010F;
+    private const uint CFS_POINT = 0x0002;
+    private const uint CFS_CANDIDATEPOS = 0x0040;
     private const int SC_MAXIMIZE = 0xF030;
     private const int HTCAPTION = 2;
     private const int HTLEFT = 10;
@@ -135,6 +143,8 @@ public partial class NoteWindow : Window
         _formattingToolbarWindow.StrikeButton.Click += (_, _) => ApplyStickyTextFormat(StickyTextFormat.Strikethrough);
         _formattingToolbarWindow.BulletButton.Click += (_, _) => ApplyStickyTextFormat(StickyTextFormat.Bullet);
         _formattingToolbarWindow.CodeViewToggleButton.Click += (_, _) => ToggleStickyCodeView();
+        FormattedContentEditor.SelectionChanged += (_, _) => UpdateFormattingSelectionVisuals();
+        ContentEditor.SelectionChanged += (_, _) => UpdateFormattingSelectionVisuals();
 
         _settingsPanelWindow.MouseEnter += SettingsPopup_MouseEnter;
         _settingsPanelWindow.MouseLeave += SettingsPopup_MouseLeave;
@@ -175,8 +185,21 @@ public partial class NoteWindow : Window
         Left = startLeft;
         Top = startTop;
         Width = startWidth;
-        Height = startHeight;
         _expandedHeightBeforeCollapse = Math.Max(ExpandedMinHeight, startHeight);
+        _isContentCollapsed = _note.IsContentCollapsed;
+        if (_isContentCollapsed)
+        {
+            BodyRowDefinition.Height = new GridLength(0);
+            BodyAreaRoot.Visibility = Visibility.Collapsed;
+            ContentScrollViewer.Visibility = Visibility.Collapsed;
+            MinHeight = CollapsedWindowHeight;
+            Height = CollapsedWindowHeight;
+        }
+        else
+        {
+            MinHeight = ExpandedMinHeight;
+            Height = startHeight;
+        }
         _suspendLayoutSave = false;
 
         RefreshReadonlyView();
@@ -222,6 +245,11 @@ public partial class NoteWindow : Window
         };
         Closing += (_, _) =>
         {
+            if (Application.Current is App closingApp)
+            {
+                closingApp.SetGlobalMouseTracking(this, enabled: false);
+            }
+
             if (_isDeleting)
             {
                 _actionBarWindow.ClosePermanently();
@@ -268,13 +296,21 @@ public partial class NoteWindow : Window
         _originalExStyle = DesktopWindowHost.GetWindowExStyle(_windowHandle);
         source.AddHook(WndProc);
 
-        ApplyShowDesktopBehavior(true);
+        bool keepVisibleOnShowDesktop = Application.Current is App app
+            && app.Settings.KeepVisibleOnShowDesktop;
+        ApplyShowDesktopBehavior(keepVisibleOnShowDesktop);
 
         ApplyWindowRegion(source);
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
+        if (msg is WM_IME_STARTCOMPOSITION or WM_IME_COMPOSITION)
+        {
+            UpdateImeCompositionWindow();
+            Dispatcher.BeginInvoke(UpdateImeCompositionWindow, DispatcherPriority.Input);
+        }
+
         if (msg == WM_SYSCOMMAND)
         {
             int command = wParam.ToInt32() & 0xFFF0;
@@ -296,6 +332,88 @@ public partial class NoteWindow : Window
         }
 
         return IntPtr.Zero;
+    }
+
+    private void UpdateImeCompositionWindow()
+    {
+        if (!_isEditing || _windowHandle == IntPtr.Zero || !TryGetImeCaretPoint(out Point caretPoint))
+        {
+            return;
+        }
+
+        HwndSource? source = PresentationSource.FromVisual(this) as HwndSource;
+        Matrix transform = source?.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
+        int x = Math.Max(0, (int)Math.Round(caretPoint.X * transform.M11));
+        int y = Math.Max(0, (int)Math.Round(caretPoint.Y * transform.M22));
+        int width = Math.Max(1, (int)Math.Round(ActualWidth * transform.M11));
+        int height = Math.Max(1, (int)Math.Round(ActualHeight * transform.M22));
+
+        IntPtr inputContext = ImmGetContext(_windowHandle);
+        if (inputContext == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            ImeCompositionForm compositionForm = new()
+            {
+                Style = CFS_POINT,
+                CurrentPosition = new ImePoint(x, y),
+                Area = new ImeRect(0, 0, width, height)
+            };
+            ImmSetCompositionWindow(inputContext, ref compositionForm);
+
+            ImeCandidateForm candidateForm = new()
+            {
+                Index = 0,
+                Style = CFS_CANDIDATEPOS,
+                CurrentPosition = new ImePoint(x, y),
+                Area = new ImeRect(0, 0, width, height)
+            };
+            ImmSetCandidateWindow(inputContext, ref candidateForm);
+        }
+        finally
+        {
+            ImmReleaseContext(_windowHandle, inputContext);
+        }
+    }
+
+    private bool TryGetImeCaretPoint(out Point caretPoint)
+    {
+        if (FormattedContentEditor.IsKeyboardFocusWithin)
+        {
+            Rect caretRect = FormattedContentEditor.CaretPosition.GetCharacterRect(LogicalDirection.Forward);
+            if (caretRect.IsEmpty)
+            {
+                caretPoint = default;
+                return false;
+            }
+
+            caretPoint = FormattedContentEditor.TranslatePoint(
+                new Point(caretRect.Left, caretRect.Bottom + 2),
+                this);
+            return true;
+        }
+
+        if (Keyboard.FocusedElement is TextBox textBox && IsDescendantOf(textBox, this))
+        {
+            int caretIndex = Math.Clamp(textBox.CaretIndex, 0, textBox.Text?.Length ?? 0);
+            Rect caretRect = textBox.GetRectFromCharacterIndex(caretIndex, trailingEdge: false);
+            if (caretRect.IsEmpty)
+            {
+                caretPoint = default;
+                return false;
+            }
+
+            caretPoint = textBox.TranslatePoint(
+                new Point(caretRect.Left, caretRect.Bottom + 2),
+                this);
+            return true;
+        }
+
+        caretPoint = default;
+        return false;
     }
 
     private void RefreshReadonlyView()
@@ -325,11 +443,6 @@ public partial class NoteWindow : Window
 
         TitleEditor.Text = _note.Title;
 
-        TitleTextBlock.Visibility = Visibility.Collapsed;
-        ContentScrollViewer.Visibility = Visibility.Collapsed;
-
-        TitleEditor.Visibility = Visibility.Visible;
-
         if (_note.Kind == NoteKind.Todo)
         {
             _todoEditItems.Clear();
@@ -340,8 +453,6 @@ public partial class NoteWindow : Window
                 _todoEditItems.Add(new TodoItemData(string.Empty, false));
             }
 
-            ContentEditor.Visibility = Visibility.Collapsed;
-            TodoEditorScrollViewer.Visibility = Visibility.Visible;
             RefreshTodoEditor();
         }
         else
@@ -349,11 +460,34 @@ public partial class NoteWindow : Window
             ContentEditor.Text = _note.Content;
             LoadFormattedEditorFromMarkup(_note.Content);
             _isStickyCodeView = false;
-            UpdateStickyEditorView();
-            TodoEditorScrollViewer.Visibility = Visibility.Collapsed;
         }
 
-        UpdateActionBarState();
+        bool redrawSuspended = SuspendWindowRedraw();
+        try
+        {
+            TitleTextBlock.Visibility = Visibility.Collapsed;
+            ContentScrollViewer.Visibility = Visibility.Collapsed;
+            TitleEditor.Visibility = Visibility.Visible;
+
+            if (_note.Kind == NoteKind.Todo)
+            {
+                ContentEditor.Visibility = Visibility.Collapsed;
+                FormattedContentEditor.Visibility = Visibility.Collapsed;
+                TodoEditorScrollViewer.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                TodoEditorScrollViewer.Visibility = Visibility.Collapsed;
+                UpdateStickyEditorView();
+            }
+
+            UpdateActionBarState();
+            UpdateLayout();
+        }
+        finally
+        {
+            ResumeWindowRedraw(redrawSuspended);
+        }
 
         if (_note.Kind == NoteKind.Todo)
         {
@@ -429,7 +563,7 @@ public partial class NoteWindow : Window
         SettingsPanel.SetCornerRadius(Math.Max(0, _currentCornerRadius * 0.5));
         FormattingToolbar.SetCornerRadius(Math.Max(0, _currentCornerRadius * 0.5));
         UpdateRoundedClip();
-        ApplyShowDesktopBehavior(true);
+        ApplyShowDesktopBehavior(settings.KeepVisibleOnShowDesktop);
         if (_isEditing && _note.Kind == NoteKind.Todo)
         {
             RefreshTodoEditor();
@@ -692,6 +826,7 @@ public partial class NoteWindow : Window
             Foreground = hyperlinkBrush,
             Cursor = Cursors.Hand
         };
+        hyperlink.SetValue(HasExplicitUnderlineProperty, format.IsUnderline);
         ApplyInlineFormat(hyperlink, format, forceUnderline: true);
         hyperlink.Click += Hyperlink_Click;
         inlines.Add(hyperlink);
@@ -747,6 +882,7 @@ public partial class NoteWindow : Window
         Brush hyperlinkBrush = BuildHyperlinkBrush(ParseBackgroundColor(_note.BackgroundColor));
         InlineFormat normalFormat = new();
 
+        System.Windows.Documents.List? currentList = null;
         foreach (string rawLine in lines)
         {
             Paragraph paragraph = new()
@@ -759,19 +895,38 @@ public partial class NoteWindow : Window
             int leadingWhitespaceLength = line.Length - trimmedStart.Length;
             if (trimmedStart.StartsWith("<l>", StringComparison.Ordinal))
             {
+                currentList ??= new System.Windows.Documents.List
+                {
+                    MarkerStyle = TextMarkerStyle.Disc,
+                    Margin = new Thickness(18, 0, 0, 0),
+                    Padding = new Thickness(0)
+                };
+
+                if (currentList.Parent is null)
+                {
+                    document.Blocks.Add(currentList);
+                }
+
                 if (leadingWhitespaceLength > 0)
                 {
                     AddFormattedRun(paragraph.Inlines, line[..leadingWhitespaceLength], foreground, normalFormat);
                 }
 
-                AddFormattedRun(paragraph.Inlines, "\u2022 ", foreground, normalFormat);
                 line = trimmedStart[3..];
                 if (line.EndsWith("</l>", StringComparison.Ordinal))
                 {
                     line = line[..^4];
                 }
+
+                AppendFormattedSegment(paragraph.Inlines, line, foreground, hyperlinkBrush, normalFormat);
+                currentList.ListItems.Add(new ListItem(paragraph)
+                {
+                    Margin = new Thickness(0)
+                });
+                continue;
             }
 
+            currentList = null;
             AppendFormattedSegment(paragraph.Inlines, line, foreground, hyperlinkBrush, normalFormat);
             document.Blocks.Add(paragraph);
         }
@@ -802,13 +957,7 @@ public partial class NoteWindow : Window
 
     private static string SerializeParagraphToMarkup(Paragraph paragraph)
     {
-        string raw = SerializeInlinesToMarkup(paragraph.Inlines);
-        if (raw.StartsWith("\u2022 ", StringComparison.Ordinal))
-        {
-            return $"<l>{raw[2..]}</l>";
-        }
-
-        return raw;
+        return SerializeInlinesToMarkup(paragraph.Inlines);
     }
 
     private static string SerializeListItemToMarkup(ListItem item)
@@ -825,30 +974,47 @@ public partial class NoteWindow : Window
         return string.Join(Environment.NewLine, lines);
     }
 
-    private static string SerializeInlinesToMarkup(InlineCollection inlines)
+    private static string SerializeInlinesToMarkup(InlineCollection inlines, bool? underlineOverride = null)
     {
         List<string> parts = new();
         foreach (Inline inline in inlines)
         {
-            parts.Add(SerializeInlineToMarkup(inline));
+            parts.Add(SerializeInlineToMarkup(inline, underlineOverride));
         }
 
         return string.Concat(parts);
     }
 
-    private static string SerializeInlineToMarkup(Inline inline)
+    private static string SerializeInlineToMarkup(Inline inline, bool? underlineOverride)
     {
-        string text = inline switch
+        if (inline is LineBreak)
         {
-            Run run => run.Text,
-            Span span => SerializeInlinesToMarkup(span.Inlines),
-            LineBreak => Environment.NewLine,
-            _ => new TextRange(inline.ContentStart, inline.ContentEnd).Text
-        };
+            return Environment.NewLine;
+        }
+
+        if (inline is Span span)
+        {
+            bool? childUnderlineOverride = underlineOverride;
+            if (span is Hyperlink)
+            {
+                childUnderlineOverride = (bool)span.GetValue(HasExplicitUnderlineProperty);
+            }
+
+            return SerializeInlinesToMarkup(span.Inlines, childUnderlineOverride);
+        }
+
+        string text = inline is Run run
+            ? run.Text
+            : new TextRange(inline.ContentStart, inline.ContentEnd).Text;
+
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
 
         bool isBold = inline.FontWeight == FontWeights.Bold;
         bool isItalic = inline.FontStyle == FontStyles.Italic;
-        bool isUnderline = HasTextDecoration(inline, TextDecorations.Underline);
+        bool isUnderline = underlineOverride ?? HasTextDecoration(inline, TextDecorations.Underline);
         bool isStrike = HasTextDecoration(inline, TextDecorations.Strikethrough);
 
         if (isStrike)
@@ -1323,6 +1489,137 @@ public partial class NoteWindow : Window
         double toolbarLeft = Left - FormattingToolbar.Width - 8;
         double toolbarTop = Top + TitleAreaRoot.ActualHeight;
         FormattingToolbar.ShowAt(toolbarLeft, toolbarTop);
+        UpdateFormattingSelectionVisuals();
+    }
+
+    private void UpdateFormattingSelectionVisuals()
+    {
+        bool isBold = false;
+        bool isItalic = false;
+        bool isUnderline = false;
+        bool isStrikethrough = false;
+        bool isBullet = false;
+
+        if (_isEditing && _note.Kind == NoteKind.Standard)
+        {
+            if (_isStickyCodeView)
+            {
+                isBold = IsCodeSelectionWrapped("<b>", "</b>");
+                isItalic = IsCodeSelectionWrapped("<i>", "</i>");
+                isUnderline = IsCodeSelectionWrapped("<u>", "</u>");
+                isStrikethrough = IsCodeSelectionWrapped("<s>", "</s>");
+                isBullet = AreSelectedCodeLinesBulleted();
+            }
+            else
+            {
+                TextRange selection = FormattedContentEditor.Selection;
+                object fontWeight = selection.GetPropertyValue(TextElement.FontWeightProperty);
+                object fontStyle = selection.GetPropertyValue(TextElement.FontStyleProperty);
+                object decorations = selection.GetPropertyValue(Inline.TextDecorationsProperty);
+
+                isBold = fontWeight is FontWeight weight
+                    && weight.ToOpenTypeWeight() >= FontWeights.Bold.ToOpenTypeWeight();
+                isItalic = fontStyle is System.Windows.FontStyle style && style == FontStyles.Italic;
+                if (decorations is TextDecorationCollection textDecorations)
+                {
+                    isUnderline = HasTextDecoration(textDecorations, TextDecorations.Underline);
+                    isStrikethrough = HasTextDecoration(textDecorations, TextDecorations.Strikethrough);
+                }
+
+                bool startIsBullet = FindAncestor<ListItem>(selection.Start.Parent as DependencyObject) is not null;
+                bool endIsBullet = selection.IsEmpty
+                    || FindAncestor<ListItem>(selection.End.Parent as DependencyObject) is not null;
+                isBullet = startIsBullet && endIsBullet;
+            }
+        }
+
+        UpdateFormattingButtonVisual(FormattingToolbar.BoldButton, isBold);
+        UpdateFormattingButtonVisual(FormattingToolbar.ItalicButton, isItalic);
+        UpdateFormattingButtonVisual(FormattingToolbar.UnderlineButton, isUnderline);
+        UpdateFormattingButtonVisual(FormattingToolbar.StrikeButton, isStrikethrough);
+        UpdateFormattingButtonVisual(FormattingToolbar.BulletButton, isBullet);
+    }
+
+    private static bool HasTextDecoration(TextDecorationCollection decorations, TextDecorationCollection target)
+    {
+        TextDecorationLocation targetLocation = target[0].Location;
+        return decorations.Any(decoration => decoration.Location == targetLocation);
+    }
+
+    private static void UpdateFormattingButtonVisual(Button button, bool isActive)
+    {
+        button.Background = new SolidColorBrush(isActive
+            ? Color.FromRgb(214, 126, 38)
+            : Color.FromRgb(74, 74, 74));
+        button.BorderBrush = new SolidColorBrush(isActive
+            ? Color.FromRgb(255, 221, 178)
+            : Color.FromRgb(104, 104, 104));
+        button.BorderThickness = isActive ? new Thickness(1.5) : new Thickness(1);
+    }
+
+    private bool IsCodeSelectionWrapped(string openMarker, string closeMarker)
+    {
+        string text = ContentEditor.Text ?? string.Empty;
+        int selectionStart = ContentEditor.SelectionStart;
+        int selectionLength = ContentEditor.SelectionLength;
+        string selectedText = ContentEditor.SelectedText ?? string.Empty;
+
+        if (selectionLength > 0
+            && selectedText.StartsWith(openMarker, StringComparison.Ordinal)
+            && selectedText.EndsWith(closeMarker, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        int selectionEnd = selectionStart + selectionLength;
+        return selectionStart >= openMarker.Length
+            && selectionEnd + closeMarker.Length <= text.Length
+            && text.AsSpan(selectionStart - openMarker.Length, openMarker.Length).SequenceEqual(openMarker)
+            && text.AsSpan(selectionEnd, closeMarker.Length).SequenceEqual(closeMarker);
+    }
+
+    private bool AreSelectedCodeLinesBulleted()
+    {
+        string text = ContentEditor.Text ?? string.Empty;
+        if (text.Length == 0 || ContentEditor.LineCount == 0)
+        {
+            return false;
+        }
+
+        int selectionStart = ContentEditor.SelectionStart;
+        int selectionLength = ContentEditor.SelectionLength;
+        int selectionEnd = Math.Min(text.Length, selectionStart + selectionLength);
+        int endCharacter = selectionLength > 0 ? Math.Max(selectionStart, selectionEnd - 1) : selectionStart;
+        int startLine = ContentEditor.GetLineIndexFromCharacterIndex(selectionStart);
+        int endLine = ContentEditor.GetLineIndexFromCharacterIndex(endCharacter);
+        bool foundContent = false;
+
+        for (int lineIndex = startLine; lineIndex <= endLine; lineIndex++)
+        {
+            int lineStart = ContentEditor.GetCharacterIndexFromLineIndex(lineIndex);
+            int nextLineStart = lineIndex + 1 < ContentEditor.LineCount
+                ? ContentEditor.GetCharacterIndexFromLineIndex(lineIndex + 1)
+                : text.Length;
+            if (lineStart < 0 || nextLineStart < lineStart)
+            {
+                continue;
+            }
+
+            string content = StripLineBreakSuffix(text[lineStart..nextLineStart], out _);
+            if (content.Trim().Length == 0)
+            {
+                continue;
+            }
+
+            foundContent = true;
+            int indentLength = content.Length - content.TrimStart(' ', '\t').Length;
+            if (!IsBulletTaggedLine(content, indentLength, out _))
+            {
+                return false;
+            }
+        }
+
+        return foundContent;
     }
 
     private void FocusFirstTodoEditor()
@@ -1438,8 +1735,8 @@ public partial class NoteWindow : Window
 
         _repository.SaveNote(_note, TitleEditor.Text, contentToSave);
 
-        ExitEditModeVisuals();
         RefreshReadonlyView();
+        ExitEditModeVisuals();
         NotifyAppNotesChanged();
     }
 
@@ -1454,25 +1751,56 @@ public partial class NoteWindow : Window
         _note.Content = _originalContent;
         _todoEditItems.Clear();
 
-        ExitEditModeVisuals();
         RefreshReadonlyView();
+        ExitEditModeVisuals();
     }
 
     private void ExitEditModeVisuals()
     {
-        _isEditing = false;
+        bool redrawSuspended = SuspendWindowRedraw();
+        try
+        {
+            _isEditing = false;
 
-        TitleTextBlock.Visibility = Visibility.Visible;
-        ContentScrollViewer.Visibility = _isContentCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            TitleTextBlock.Visibility = Visibility.Visible;
+            ContentScrollViewer.Visibility = _isContentCollapsed ? Visibility.Collapsed : Visibility.Visible;
 
-        TitleEditor.Visibility = Visibility.Collapsed;
-        ContentEditor.Visibility = Visibility.Collapsed;
-        FormattedContentEditor.Visibility = Visibility.Collapsed;
-        TodoEditorScrollViewer.Visibility = Visibility.Collapsed;
-        TodoOrganizer.HidePane();
-        FormattingToolbar.HidePane();
+            TitleEditor.Visibility = Visibility.Collapsed;
+            ContentEditor.Visibility = Visibility.Collapsed;
+            FormattedContentEditor.Visibility = Visibility.Collapsed;
+            TodoEditorScrollViewer.Visibility = Visibility.Collapsed;
+            TodoOrganizer.HidePane();
+            FormattingToolbar.HidePane();
 
-        UpdateActionBarState();
+            UpdateActionBarState();
+            UpdateLayout();
+        }
+        finally
+        {
+            ResumeWindowRedraw(redrawSuspended);
+        }
+    }
+
+    private bool SuspendWindowRedraw()
+    {
+        if (_windowHandle == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        DesktopWindowHost.SetWindowRedraw(_windowHandle, enabled: false);
+        return true;
+    }
+
+    private void ResumeWindowRedraw(bool wasSuspended)
+    {
+        if (!wasSuspended || _windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        DesktopWindowHost.SetWindowRedraw(_windowHandle, enabled: true);
+        DesktopWindowHost.RefreshDesktopHost(_windowHandle);
     }
 
     private void ScheduleLayoutSave()
@@ -1562,7 +1890,7 @@ public partial class NoteWindow : Window
 
             ScheduleLayoutSave();
             RefreshDesktopHostSurface();
-            RefreshAllOpenNoteSurfaces();
+            DesktopWindowHost.RefreshDesktopBackground();
         }
     }
 
@@ -1830,6 +2158,15 @@ public partial class NoteWindow : Window
         }
 
         SchedulePopupRefresh();
+        UpdateGlobalMouseTracking();
+    }
+
+    private void UpdateGlobalMouseTracking()
+    {
+        if (Application.Current is App app)
+        {
+            app.SetGlobalMouseTracking(this, _isEditing || _settingsPanelMode != SettingsPanelMode.None);
+        }
     }
 
     private void StartActionBarCollapseDelay()
@@ -1884,6 +2221,7 @@ public partial class NoteWindow : Window
         }
 
         _isContentCollapsed = collapse;
+        _note.IsContentCollapsed = collapse;
         DismissTransientPanelsForContentCollapse();
 
         _suspendLayoutSave = true;
@@ -1913,13 +2251,11 @@ public partial class NoteWindow : Window
 
         UpdateRoundedClip();
         RefreshDesktopHostSurface();
+        DesktopWindowHost.RefreshDesktopBackground();
         SyncActionBarLayout();
         UpdateActionBarState();
 
-        if (!collapse)
-        {
-            ScheduleLayoutSave();
-        }
+        ScheduleLayoutSave();
     }
 
     private void DismissTransientPanelsForContentCollapse()
@@ -2227,24 +2563,6 @@ public partial class NoteWindow : Window
         return (safeLeft, safeTop, safeWidth, safeHeight);
     }
 
-    private CustomPopupPlacement[] ActionPopup_CustomPopupPlacement(Size popupSize, Size targetSize, Point offset)
-    {
-        Point topPlacement = new(0, -popupSize.Height);
-        return
-        [
-            new CustomPopupPlacement(topPlacement, PopupPrimaryAxis.None)
-        ];
-    }
-
-    private CustomPopupPlacement[] SettingsPopup_CustomPopupPlacement(Size popupSize, Size targetSize, Point offset)
-    {
-        Point leftPlacement = new(-popupSize.Width - 8, 0);
-        return
-        [
-            new CustomPopupPlacement(leftPlacement, PopupPrimaryAxis.None)
-        ];
-    }
-
     private (int x, int y, int width, int height) GetDevicePixelBounds(HwndSource source)
     {
         Matrix transform = source.CompositionTarget?.TransformToDevice ?? Matrix.Identity;
@@ -2304,12 +2622,14 @@ public partial class NoteWindow : Window
         if (!_isStickyCodeView)
         {
             ApplyFormattedEditorTextFormat(format);
+            UpdateFormattingSelectionVisuals();
             return;
         }
 
         if (format == StickyTextFormat.Bullet)
         {
             ToggleBulletOnSelectedLines();
+            UpdateFormattingSelectionVisuals();
             return;
         }
 
@@ -2323,6 +2643,7 @@ public partial class NoteWindow : Window
         };
 
         WrapContentEditorSelection(openMarker, closeMarker);
+        UpdateFormattingSelectionVisuals();
     }
 
     private void ApplyFormattedEditorTextFormat(StickyTextFormat format)
@@ -2335,27 +2656,53 @@ public partial class NoteWindow : Window
             return;
         }
 
-        TextRange selection = FormattedContentEditor.Selection;
-        if (selection.IsEmpty)
-        {
-            return;
-        }
-
         switch (format)
         {
             case StickyTextFormat.Bold:
-                selection.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold);
+                EditingCommands.ToggleBold.Execute(null, FormattedContentEditor);
                 break;
             case StickyTextFormat.Italic:
-                selection.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic);
+                EditingCommands.ToggleItalic.Execute(null, FormattedContentEditor);
                 break;
             case StickyTextFormat.Underline:
-                selection.ApplyPropertyValue(Inline.TextDecorationsProperty, TextDecorations.Underline);
+                ToggleFormattedEditorTextDecoration(TextDecorations.Underline);
                 break;
             case StickyTextFormat.Strikethrough:
-                selection.ApplyPropertyValue(Inline.TextDecorationsProperty, TextDecorations.Strikethrough);
+                ToggleFormattedEditorTextDecoration(TextDecorations.Strikethrough);
                 break;
         }
+    }
+
+    private void ToggleFormattedEditorTextDecoration(TextDecorationCollection target)
+    {
+        TextRange selection = FormattedContentEditor.Selection;
+        object currentValue = selection.GetPropertyValue(Inline.TextDecorationsProperty);
+        if (currentValue == DependencyProperty.UnsetValue)
+        {
+            currentValue = new TextRange(selection.Start, selection.Start)
+                .GetPropertyValue(Inline.TextDecorationsProperty);
+        }
+
+        TextDecorationCollection decorations = currentValue is TextDecorationCollection currentDecorations
+            ? new TextDecorationCollection(currentDecorations)
+            : new TextDecorationCollection();
+
+        TextDecorationLocation targetLocation = target[0].Location;
+        bool removeDecoration = decorations.Any(decoration => decoration.Location == targetLocation);
+        for (int index = decorations.Count - 1; index >= 0; index--)
+        {
+            if (decorations[index].Location == targetLocation)
+            {
+                decorations.RemoveAt(index);
+            }
+        }
+
+        if (!removeDecoration)
+        {
+            decorations.Add(target[0]);
+        }
+
+        selection.ApplyPropertyValue(Inline.TextDecorationsProperty, decorations);
     }
 
     private void ToggleFormattedEditorBullet()
@@ -2410,6 +2757,8 @@ public partial class NoteWindow : Window
         {
             FormattedContentEditor.Focus();
         }
+
+        UpdateFormattingSelectionVisuals();
     }
 
     private void WrapContentEditorSelection(string openMarker, string closeMarker)
@@ -2424,6 +2773,21 @@ public partial class NoteWindow : Window
         {
             ContentEditor.SelectedText = openMarker + closeMarker;
             ContentEditor.CaretIndex = selectionStart + openMarker.Length;
+            return;
+        }
+
+        int selectionEnd = selectionStart + selectionLength;
+        string text = ContentEditor.Text ?? string.Empty;
+        if (selectionStart >= openMarker.Length
+            && selectionEnd + closeMarker.Length <= text.Length
+            && text.AsSpan(selectionStart - openMarker.Length, openMarker.Length).SequenceEqual(openMarker)
+            && text.AsSpan(selectionEnd, closeMarker.Length).SequenceEqual(closeMarker))
+        {
+            ContentEditor.Select(
+                selectionStart - openMarker.Length,
+                openMarker.Length + selectionLength + closeMarker.Length);
+            ContentEditor.SelectedText = selectedText;
+            ContentEditor.Select(selectionStart - openMarker.Length, selectionLength);
             return;
         }
 
@@ -2705,14 +3069,6 @@ public partial class NoteWindow : Window
         DesktopWindowHost.RefreshDesktopHost(_windowHandle);
     }
 
-    private void RefreshAllOpenNoteSurfaces()
-    {
-        if (Application.Current is App app)
-        {
-            app.RefreshAllOpenNoteSurfaces();
-        }
-    }
-
     [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
     private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
 
@@ -2721,6 +3077,68 @@ public partial class NoteWindow : Window
 
     [System.Runtime.InteropServices.DllImport("gdi32.dll", SetLastError = true)]
     private static extern bool DeleteObject(IntPtr hObject);
+
+    [DllImport("imm32.dll")]
+    private static extern IntPtr ImmGetContext(IntPtr windowHandle);
+
+    [DllImport("imm32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ImmReleaseContext(IntPtr windowHandle, IntPtr inputContext);
+
+    [DllImport("imm32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ImmSetCompositionWindow(IntPtr inputContext, ref ImeCompositionForm compositionForm);
+
+    [DllImport("imm32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ImmSetCandidateWindow(IntPtr inputContext, ref ImeCandidateForm candidateForm);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ImePoint
+    {
+        public ImePoint(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ImeRect
+    {
+        public ImeRect(int left, int top, int right, int bottom)
+        {
+            Left = left;
+            Top = top;
+            Right = right;
+            Bottom = bottom;
+        }
+
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ImeCompositionForm
+    {
+        public uint Style;
+        public ImePoint CurrentPosition;
+        public ImeRect Area;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ImeCandidateForm
+    {
+        public uint Index;
+        public uint Style;
+        public ImePoint CurrentPosition;
+        public ImeRect Area;
+    }
 
     private void TextSizeButton_Click(object sender, RoutedEventArgs e)
     {

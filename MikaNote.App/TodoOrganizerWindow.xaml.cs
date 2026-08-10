@@ -15,6 +15,8 @@ public partial class TodoOrganizerWindow : Window
     private IntPtr _windowHandle;
     private nint _originalStyle;
     private nint _originalExStyle;
+    private double _logicalLeft;
+    private double _logicalTop;
 
     public bool IsPaneVisible => _isPaneVisible;
     public StackPanel ItemsPanel => OrganizerItemsPanel;
@@ -67,6 +69,10 @@ public partial class TodoOrganizerWindow : Window
             Show();
             _hasBeenShown = true;
         }
+        else if (!IsVisible)
+        {
+            Show();
+        }
 
         _isPaneVisible = true;
         UpdatePlacement(left, top, Height);
@@ -80,7 +86,7 @@ public partial class TodoOrganizerWindow : Window
         }
 
         _isPaneVisible = false;
-        MoveOffscreen();
+        Hide();
     }
 
     public void SetCornerRadius(double cornerRadius)
@@ -119,24 +125,31 @@ public partial class TodoOrganizerWindow : Window
             ? source.CompositionTarget?.TransformToDevice ?? Matrix.Identity
             : Matrix.Identity;
 
-        int x = _isPaneVisible ? (int)Math.Round(Left * transform.M11) : -32000;
-        int y = _isPaneVisible ? (int)Math.Round(Top * transform.M22) : -32000;
+        int x = _isPaneVisible ? (int)Math.Round(_logicalLeft * transform.M11) : -32000;
+        int y = _isPaneVisible ? (int)Math.Round(_logicalTop * transform.M22) : -32000;
         int width = Math.Max(1, (int)Math.Round(Width * transform.M11));
         int height = Math.Max(1, (int)Math.Round(Height * transform.M22));
 
         if (keepVisibleOnShowDesktop && !_isDesktopAttached)
         {
-            _isDesktopAttached = DesktopWindowHost.TryAttachToDesktop(_windowHandle, _originalStyle, _originalExStyle, x, y, width, height);
+            _isDesktopAttached = DesktopWindowHost.TryAttachToDesktop(_windowHandle, _originalStyle, _originalExStyle, x, y, width, height, _isPaneVisible);
         }
         else if (!keepVisibleOnShowDesktop && _isDesktopAttached)
         {
-            DesktopWindowHost.DetachFromDesktop(_windowHandle, _originalStyle, _originalExStyle, x, y, width, height);
+            DesktopWindowHost.DetachFromDesktop(_windowHandle, _originalStyle, _originalExStyle, x, y, width, height, _isPaneVisible);
             _isDesktopAttached = false;
+            if (_isPaneVisible)
+            {
+                Left = _logicalLeft;
+                Top = _logicalTop;
+            }
         }
     }
 
     public void UpdatePlacement(double left, double top, double height)
     {
+        _logicalLeft = left;
+        _logicalTop = top;
         Height = Math.Max(48, height);
 
         if (_windowHandle == IntPtr.Zero)
@@ -159,23 +172,10 @@ public partial class TodoOrganizerWindow : Window
         {
             DesktopWindowHost.UpdateBounds(_windowHandle, x, y, width, deviceHeight);
         }
-    }
-
-    private void MoveOffscreen()
-    {
-        if (_windowHandle == IntPtr.Zero)
+        else
         {
-            Left = -32000;
-            Top = -32000;
-            return;
+            Left = left;
+            Top = top;
         }
-
-        Matrix transform = PresentationSource.FromVisual(this) is HwndSource source
-            ? source.CompositionTarget?.TransformToDevice ?? Matrix.Identity
-            : Matrix.Identity;
-
-        int width = Math.Max(1, (int)Math.Round(Width * transform.M11));
-        int height = Math.Max(1, (int)Math.Round(Height * transform.M22));
-        DesktopWindowHost.UpdateBounds(_windowHandle, -32000, -32000, width, height);
     }
 }

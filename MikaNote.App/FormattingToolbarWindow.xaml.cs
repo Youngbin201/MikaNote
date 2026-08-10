@@ -14,6 +14,8 @@ public partial class FormattingToolbarWindow : Window
     private IntPtr _windowHandle;
     private nint _originalStyle;
     private nint _originalExStyle;
+    private double _logicalLeft;
+    private double _logicalTop;
 
     public bool IsPaneVisible => _isPaneVisible;
 
@@ -62,6 +64,10 @@ public partial class FormattingToolbarWindow : Window
             Show();
             _hasBeenShown = true;
         }
+        else if (!IsVisible)
+        {
+            Show();
+        }
 
         _isPaneVisible = true;
         UpdatePlacement(left, top);
@@ -75,7 +81,7 @@ public partial class FormattingToolbarWindow : Window
         }
 
         _isPaneVisible = false;
-        MoveOffscreen();
+        Hide();
     }
 
     public void SetCornerRadius(double cornerRadius)
@@ -114,24 +120,31 @@ public partial class FormattingToolbarWindow : Window
             ? source.CompositionTarget?.TransformToDevice ?? Matrix.Identity
             : Matrix.Identity;
 
-        int x = _isPaneVisible ? (int)Math.Round(Left * transform.M11) : -32000;
-        int y = _isPaneVisible ? (int)Math.Round(Top * transform.M22) : -32000;
+        int x = _isPaneVisible ? (int)Math.Round(_logicalLeft * transform.M11) : -32000;
+        int y = _isPaneVisible ? (int)Math.Round(_logicalTop * transform.M22) : -32000;
         int width = Math.Max(1, (int)Math.Round(Width * transform.M11));
         int height = Math.Max(1, (int)Math.Round(Height * transform.M22));
 
         if (keepVisibleOnShowDesktop && !_isDesktopAttached)
         {
-            _isDesktopAttached = DesktopWindowHost.TryAttachToDesktop(_windowHandle, _originalStyle, _originalExStyle, x, y, width, height);
+            _isDesktopAttached = DesktopWindowHost.TryAttachToDesktop(_windowHandle, _originalStyle, _originalExStyle, x, y, width, height, _isPaneVisible);
         }
         else if (!keepVisibleOnShowDesktop && _isDesktopAttached)
         {
-            DesktopWindowHost.DetachFromDesktop(_windowHandle, _originalStyle, _originalExStyle, x, y, width, height);
+            DesktopWindowHost.DetachFromDesktop(_windowHandle, _originalStyle, _originalExStyle, x, y, width, height, _isPaneVisible);
             _isDesktopAttached = false;
+            if (_isPaneVisible)
+            {
+                Left = _logicalLeft;
+                Top = _logicalTop;
+            }
         }
     }
 
     public void UpdatePlacement(double left, double top)
     {
+        _logicalLeft = left;
+        _logicalTop = top;
         if (_windowHandle == IntPtr.Zero)
         {
             Left = left;
@@ -152,13 +165,11 @@ public partial class FormattingToolbarWindow : Window
         {
             DesktopWindowHost.UpdateBounds(_windowHandle, x, y, width, height);
         }
-
-        Left = left;
-        Top = top;
+        else
+        {
+            Left = left;
+            Top = top;
+        }
     }
 
-    private void MoveOffscreen()
-    {
-        UpdatePlacement(-32000, -32000);
-    }
 }

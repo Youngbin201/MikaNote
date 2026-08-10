@@ -21,6 +21,7 @@ public partial class App : Application
     private const string ShowWelcomeSplashArgument = "--show-welcome-splash";
 
     private readonly List<NoteWindow> _openWindows = new();
+    private readonly HashSet<NoteWindow> _globalMouseTrackingWindows = new();
     private readonly CancellationTokenSource _pipeCancellationTokenSource = new();
     private Mutex? _singleInstanceMutex;
     private bool _ownsSingleInstanceMutex;
@@ -77,7 +78,6 @@ public partial class App : Application
         SplashWindow? splashWindow = ShowWelcomeSplashIfRequested(e.Args, out DateTimeOffset splashShownAt);
 
         EnsureNotifyIcon();
-        InstallGlobalMouseHook();
         _ = Task.Run(() => RunCommandPipeServerAsync(_pipeCancellationTokenSource.Token));
 
         LoadAndOpenAllNotes();
@@ -326,6 +326,12 @@ public partial class App : Application
 
     private void HandleExternalCommand(string[] args)
     {
+        if (args.Contains("--exit", StringComparer.OrdinalIgnoreCase))
+        {
+            ExitFromTray();
+            return;
+        }
+
         if (_repository is null)
         {
             return;
@@ -647,14 +653,6 @@ public partial class App : Application
         LoadAndOpenAllNotes();
     }
 
-    public void RefreshAllOpenNoteSurfaces()
-    {
-        foreach (NoteWindow window in _openWindows)
-        {
-            window.RefreshPresentation();
-        }
-    }
-
     public void DismissTransientPanelsExcept(NoteWindow activeWindow)
     {
         foreach (NoteWindow window in _openWindows)
@@ -775,6 +773,27 @@ public partial class App : Application
         _mouseHookHandle = SetWindowsHookEx(WH_MOUSE_LL, _mouseHookProc, GetModuleHandle(null), 0);
     }
 
+    public void SetGlobalMouseTracking(NoteWindow window, bool enabled)
+    {
+        if (enabled)
+        {
+            _globalMouseTrackingWindows.Add(window);
+        }
+        else
+        {
+            _globalMouseTrackingWindows.Remove(window);
+        }
+
+        if (_globalMouseTrackingWindows.Count > 0)
+        {
+            InstallGlobalMouseHook();
+        }
+        else
+        {
+            UninstallGlobalMouseHook();
+        }
+    }
+
     private void UninstallGlobalMouseHook()
     {
         if (_mouseHookHandle == IntPtr.Zero)
@@ -809,7 +828,7 @@ public partial class App : Application
     private void HandleGlobalMouseDown(int x, int y)
     {
         System.Windows.Point screenPoint = new(x, y);
-        foreach (NoteWindow window in _openWindows.ToList())
+        foreach (NoteWindow window in _globalMouseTrackingWindows.ToList())
         {
             window.HandleGlobalMouseDown(screenPoint);
         }

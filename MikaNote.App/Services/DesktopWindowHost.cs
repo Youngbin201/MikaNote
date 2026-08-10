@@ -6,6 +6,7 @@ namespace MikaNote.App;
 public static class DesktopWindowHost
 {
     private const int WM_SPAWN_WORKER = 0x052C;
+    private const int WM_SETREDRAW = 0x000B;
     private const uint SMTO_NORMAL = 0x0000;
 
     private const int GWL_STYLE = -16;
@@ -80,7 +81,15 @@ public static class DesktopWindowHost
         return true;
     }
 
-    public static bool TryAttachToDesktop(IntPtr windowHandle, nint style, nint exStyle, int x, int y, int width, int height)
+    public static bool TryAttachToDesktop(
+        IntPtr windowHandle,
+        nint style,
+        nint exStyle,
+        int x,
+        int y,
+        int width,
+        int height,
+        bool showWindow = true)
     {
         if (windowHandle == IntPtr.Zero)
         {
@@ -110,6 +119,12 @@ public static class DesktopWindowHost
             return false;
         }
 
+        uint flags = SWP_NOACTIVATE | SWP_FRAMECHANGED;
+        if (showWindow)
+        {
+            flags |= SWP_SHOWWINDOW;
+        }
+
         SetWindowPos(
             windowHandle,
             HwndTop,
@@ -117,12 +132,20 @@ public static class DesktopWindowHost
             y,
             width,
             height,
-            SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+            flags);
 
         return true;
     }
 
-    public static void DetachFromDesktop(IntPtr windowHandle, nint style, nint exStyle, int x, int y, int width, int height)
+    public static void DetachFromDesktop(
+        IntPtr windowHandle,
+        nint style,
+        nint exStyle,
+        int x,
+        int y,
+        int width,
+        int height,
+        bool showWindow = true)
     {
         if (windowHandle == IntPtr.Zero)
         {
@@ -132,6 +155,12 @@ public static class DesktopWindowHost
         SetParent(windowHandle, IntPtr.Zero);
         SetWindowLongPtr(windowHandle, GWL_STYLE, style);
         SetWindowLongPtr(windowHandle, GWL_EXSTYLE, exStyle);
+        uint flags = SWP_NOACTIVATE | SWP_FRAMECHANGED;
+        if (showWindow)
+        {
+            flags |= SWP_SHOWWINDOW;
+        }
+
         SetWindowPos(
             windowHandle,
             HwndTop,
@@ -139,7 +168,7 @@ public static class DesktopWindowHost
             y,
             width,
             height,
-            SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+            flags);
     }
 
     public static void BringToFront(IntPtr noteWindowHandle)
@@ -193,6 +222,20 @@ public static class DesktopWindowHost
                 RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW);
         }
 
+    }
+
+    public static void SetWindowRedraw(IntPtr windowHandle, bool enabled)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        SendMessage(windowHandle, WM_SETREDRAW, enabled ? new IntPtr(1) : IntPtr.Zero, IntPtr.Zero);
+    }
+
+    public static void RefreshDesktopBackground()
+    {
         IntPtr desktopHost = FindDesktopHostWindow();
         if (desktopHost == IntPtr.Zero)
         {
@@ -293,6 +336,9 @@ public static class DesktopWindowHost
 
     [DllImport("user32.dll")]
     private static extern IntPtr SetFocus(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool RedrawWindow(

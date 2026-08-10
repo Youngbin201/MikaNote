@@ -260,7 +260,8 @@ public sealed class NoteRepository
             ContentFontSize = note.ContentFontSize,
             BackgroundColor = note.BackgroundColor,
             Kind = note.Kind,
-            IsFavorite = note.IsFavorite
+            IsFavorite = note.IsFavorite,
+            IsContentCollapsed = note.IsContentCollapsed
         };
 
         string json = JsonSerializer.Serialize(layout, new JsonSerializerOptions
@@ -332,6 +333,7 @@ public sealed class NoteRepository
             IsBackup = isBackup,
             IsHidden = isHidden,
             IsFavorite = layout?.IsFavorite ?? false,
+            IsContentCollapsed = layout?.IsContentCollapsed ?? false,
             CreatedAt = createdAt,
             ModifiedAt = modifiedAt,
             Left = layout?.Left ?? left,
@@ -583,5 +585,6 @@ public sealed class NoteRepository
         public string? BackgroundColor { get; init; }
         public NoteKind? Kind { get; init; }
         public bool IsFavorite { get; init; }
+        public bool IsContentCollapsed { get; init; }
     }
 }

@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -19,6 +18,8 @@ namespace MikaNote.App;
 
 public partial class MainWindow : Window
 {
+    private const int TilePageSize = 36;
+
     private enum NoteFilterMode
     {
         All,
@@ -35,17 +36,21 @@ public partial class MainWindow : Window
     }
 
     private readonly App _app;
-    private readonly ObservableCollection<ManagerTileItem> _todoTiles = new();
-    private readonly ObservableCollection<ManagerTileItem> _memoTiles = new();
-    private readonly ObservableCollection<ManagerTileItem> _backupTiles = new();
+    private readonly List<ManagerTileItem> _todoTiles = new();
+    private readonly List<ManagerTileItem> _memoTiles = new();
+    private readonly List<ManagerTileItem> _backupTiles = new();
     private readonly LocalBackupService _localBackupService = new();
     private readonly DispatcherTimer _quickBackupStatusTimer;
+    private readonly DispatcherTimer _settingsApplyTimer;
     private bool _isRefreshingUi;
     private bool _isSelectedNoteEditing;
     private bool _showGlobalSettings;
-    private NoteFilterMode _noteFilterMode = NoteFilterMode.All;
+    private NoteFilterMode _noteFilterMode = NoteFilterMode.Active;
     private string? _selectedTileKey;
     private NoteSortMode _noteSortMode = NoteSortMode.ModifiedAt;
+    private int _todoTileLimit = TilePageSize;
+    private int _memoTileLimit = TilePageSize;
+    private int _backupTileLimit = TilePageSize;
 
     private static readonly PresetOption[] FontSizePresets =
     {
@@ -95,6 +100,7 @@ public partial class MainWindow : Window
 
     public MainWindow(App app)
     {
+        _isRefreshingUi = true;
         InitializeComponent();
 
         _app = app;
@@ -117,6 +123,16 @@ public partial class MainWindow : Window
             UpdateQuickBackupButtonUi();
         };
 
+        _settingsApplyTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(180)
+        };
+        _settingsApplyTimer.Tick += (_, _) =>
+        {
+            _settingsApplyTimer.Stop();
+            ApplyGlobalSettingsFromUi();
+        };
+
         TodoTilesItemsControl.ItemsSource = _todoTiles;
         MemoTilesItemsControl.ItemsSource = _memoTiles;
         BackupTilesItemsControl.ItemsSource = _backupTiles;
@@ -135,9 +151,15 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        bool applyPendingSettings = _settingsApplyTimer.IsEnabled;
+        _settingsApplyTimer.Stop();
         _app.NotesChanged -= App_NotesChanged;
         _app.SettingsChanged -= App_SettingsChanged;
         _quickBackupStatusTimer.Stop();
+        if (applyPendingSettings)
+        {
+            ApplyGlobalSettingsFromUi();
+        }
         base.OnClosed(e);
     }
 
@@ -182,20 +204,25 @@ public partial class MainWindow : Window
         bool showHiddenNotes = _noteFilterMode is NoteFilterMode.All or NoteFilterMode.Hidden;
         bool showTrashNotes = _noteFilterMode is NoteFilterMode.All or NoteFilterMode.Trash;
 
+        List<NoteDocument> todoNotes = new();
         if (showActiveNotes)
         {
-            foreach (NoteDocument note in SortNotes(_app.Notes.Where(note => note.Kind == NoteKind.Todo)))
-            {
-                _todoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
-            }
+            todoNotes.AddRange(SortNotes(_app.Notes.Where(note => note.Kind == NoteKind.Todo)));
         }
 
         if (showHiddenNotes)
         {
-            foreach (NoteDocument note in SortNotes(_app.HiddenNotes.Where(note => note.Kind == NoteKind.Todo)))
-            {
-                _todoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
-            }
+            todoNotes.AddRange(SortNotes(_app.HiddenNotes.Where(note => note.Kind == NoteKind.Todo)));
+        }
+
+        foreach (NoteDocument note in todoNotes.Take(_todoTileLimit))
+        {
+            _todoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (todoNotes.Count > _todoTileLimit)
+        {
+            _todoTiles.Add(BuildActionTile(ManagerTileActionKind.ShowMoreTodos));
         }
 
         if (_noteFilterMode is NoteFilterMode.All or NoteFilterMode.Active)
@@ -203,20 +230,25 @@ public partial class MainWindow : Window
             _todoTiles.Add(BuildActionTile(ManagerTileActionKind.CreateTodo));
         }
 
+        List<NoteDocument> memoNotes = new();
         if (showActiveNotes)
         {
-            foreach (NoteDocument note in SortNotes(_app.Notes.Where(note => note.Kind == NoteKind.Standard)))
-            {
-                _memoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
-            }
+            memoNotes.AddRange(SortNotes(_app.Notes.Where(note => note.Kind == NoteKind.Standard)));
         }
 
         if (showHiddenNotes)
         {
-            foreach (NoteDocument note in SortNotes(_app.HiddenNotes.Where(note => note.Kind == NoteKind.Standard)))
-            {
-                _memoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
-            }
+            memoNotes.AddRange(SortNotes(_app.HiddenNotes.Where(note => note.Kind == NoteKind.Standard)));
+        }
+
+        foreach (NoteDocument note in memoNotes.Take(_memoTileLimit))
+        {
+            _memoTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (memoNotes.Count > _memoTileLimit)
+        {
+            _memoTiles.Add(BuildActionTile(ManagerTileActionKind.ShowMoreMemos));
         }
 
         if (_noteFilterMode is NoteFilterMode.All or NoteFilterMode.Active)
@@ -226,9 +258,15 @@ public partial class MainWindow : Window
 
         if (showTrashNotes)
         {
-            foreach (NoteDocument note in SortNotes(_app.BackupNotes))
+            List<NoteDocument> backupNotes = SortNotes(_app.BackupNotes).ToList();
+            foreach (NoteDocument note in backupNotes.Take(_backupTileLimit))
             {
                 _backupTiles.Add(BuildNoteTile(note, string.Equals(BuildNoteKey(note), selectKey, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (backupNotes.Count > _backupTileLimit)
+            {
+                _backupTiles.Add(BuildActionTile(ManagerTileActionKind.ShowMoreTrash));
             }
 
             if (_app.BackupNotes.Count > 0)
@@ -244,10 +282,19 @@ public partial class MainWindow : Window
         TrashSectionHeader.Visibility = showTrashNotes ? Visibility.Visible : Visibility.Collapsed;
         BackupTilesItemsControl.Visibility = showTrashNotes ? Visibility.Visible : Visibility.Collapsed;
 
+        TodoTilesItemsControl.ItemsSource = null;
+        MemoTilesItemsControl.ItemsSource = null;
+        BackupTilesItemsControl.ItemsSource = null;
+        TodoTilesItemsControl.ItemsSource = _todoTiles;
+        MemoTilesItemsControl.ItemsSource = _memoTiles;
+        BackupTilesItemsControl.ItemsSource = _backupTiles;
+
         _selectedTileKey = GetSelectableTiles()
             .Select(tile => tile.Key)
             .FirstOrDefault(key => string.Equals(key, selectKey, StringComparison.OrdinalIgnoreCase))
             ?? GetSelectableTiles().FirstOrDefault()?.Key;
+
+        UpdateTileSelectionVisuals();
 
         _isRefreshingUi = false;
     }
@@ -277,13 +324,18 @@ public partial class MainWindow : Window
         {
             ManagerTileActionKind.CreateTodo => "New Todo",
             ManagerTileActionKind.CreateSticky => "New Note",
+            ManagerTileActionKind.ShowMoreTodos or ManagerTileActionKind.ShowMoreMemos or ManagerTileActionKind.ShowMoreTrash => "Show more",
             ManagerTileActionKind.EmptyTrash => "Empty Trash",
             _ => string.Empty
         };
 
-        string glyph = actionKind == ManagerTileActionKind.EmptyTrash ? "\uE74D" : "+";
-        string glyphFontFamily = actionKind == ManagerTileActionKind.EmptyTrash ? "Segoe Fluent Icons" : "Segoe UI";
-        double glyphFontSize = actionKind == ManagerTileActionKind.EmptyTrash ? 38 : 48;
+        bool isEmptyTrashAction = actionKind == ManagerTileActionKind.EmptyTrash;
+        bool isShowMoreAction = actionKind is ManagerTileActionKind.ShowMoreTodos
+            or ManagerTileActionKind.ShowMoreMemos
+            or ManagerTileActionKind.ShowMoreTrash;
+        string glyph = isEmptyTrashAction ? "\uE74D" : isShowMoreAction ? "…" : "+";
+        string glyphFontFamily = isEmptyTrashAction ? "Segoe Fluent Icons" : "Segoe UI";
+        double glyphFontSize = isEmptyTrashAction ? 38 : isShowMoreAction ? 36 : 48;
         return new ManagerTileItem
         {
             Key = $"action::{actionKind}",
@@ -446,6 +498,16 @@ public partial class MainWindow : Window
 
         if (tile.IsAction)
         {
+            if (tile.ActionKind is ManagerTileActionKind.ShowMoreTodos
+                or ManagerTileActionKind.ShowMoreMemos
+                or ManagerTileActionKind.ShowMoreTrash)
+            {
+                IncreaseTileLimit(tile.ActionKind);
+                RebuildTiles(_selectedTileKey);
+                RefreshSelectionUi();
+                return;
+            }
+
             if (tile.ActionKind == ManagerTileActionKind.EmptyTrash)
             {
                 EmptyTrashButton_Click(sender, e);
@@ -456,14 +518,54 @@ public partial class MainWindow : Window
                 ? _app.CreateAndOpenNewTodoNote()
                 : _app.CreateAndOpenNewNote();
 
-            RebuildTiles(BuildNoteKey(created));
-            RefreshSelectionUi();
+            SelectTile(BuildNoteKey(created));
             return;
         }
 
-        _selectedTileKey = tile.Key;
-        RebuildTiles(_selectedTileKey);
+        SelectTile(tile.Key);
+    }
+
+    private void IncreaseTileLimit(ManagerTileActionKind actionKind)
+    {
+        switch (actionKind)
+        {
+            case ManagerTileActionKind.ShowMoreTodos:
+                _todoTileLimit += TilePageSize;
+                break;
+            case ManagerTileActionKind.ShowMoreMemos:
+                _memoTileLimit += TilePageSize;
+                break;
+            case ManagerTileActionKind.ShowMoreTrash:
+                _backupTileLimit += TilePageSize;
+                break;
+        }
+    }
+
+    private void ResetTileLimits()
+    {
+        _todoTileLimit = TilePageSize;
+        _memoTileLimit = TilePageSize;
+        _backupTileLimit = TilePageSize;
+    }
+
+    private void SelectTile(string key)
+    {
+        if (!GetSelectableTiles().Any(tile => string.Equals(tile.Key, key, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        _selectedTileKey = key;
+        UpdateTileSelectionVisuals();
         RefreshSelectionUi();
+    }
+
+    private void UpdateTileSelectionVisuals()
+    {
+        foreach (ManagerTileItem tile in GetSelectableTiles())
+        {
+            tile.IsSelected = string.Equals(tile.Key, _selectedTileKey, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private void SelectedTitleTextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -546,8 +648,6 @@ public partial class MainWindow : Window
         }
 
         _app.SetFavorite(selected, !selected.IsFavorite);
-        RebuildTiles(BuildNoteKey(selected));
-        RefreshSelectionUi();
     }
 
     private void TileFavoriteButton_Click(object sender, RoutedEventArgs e)
@@ -561,10 +661,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        _app.SetFavorite(note, !note.IsFavorite);
         _selectedTileKey = tile.Key;
-        RebuildTiles(_selectedTileKey);
-        RefreshSelectionUi();
+        _app.SetFavorite(note, !note.IsFavorite);
         e.Handled = true;
     }
 
@@ -580,16 +678,12 @@ public partial class MainWindow : Window
 
         if (note.IsBackup)
         {
-            NoteDocument? restored = _app.RestoreBackupNote(note);
-            RebuildTiles(restored is null ? null : BuildNoteKey(restored));
-            RefreshSelectionUi();
+            _app.RestoreBackupNote(note);
             e.Handled = true;
             return;
         }
 
         _app.DeleteNote(note);
-        RebuildTiles(selectKey: null);
-        RefreshSelectionUi();
         e.Handled = true;
     }
 
@@ -657,19 +751,11 @@ public partial class MainWindow : Window
 
         if (selected.IsHidden)
         {
-            NoteDocument? shown = _app.ShowHiddenNote(selected);
-            if (shown is not null)
-            {
-                RebuildTiles(BuildNoteKey(shown));
-                RefreshSelectionUi();
-            }
-
+            _app.ShowHiddenNote(selected);
             return;
         }
 
         _app.HideNote(selected);
-        RebuildTiles(BuildNoteKey(selected));
-        RefreshSelectionUi();
     }
 
     private void SelectedBackgroundPresetButton_Click(object sender, RoutedEventArgs e)
@@ -684,8 +770,6 @@ public partial class MainWindow : Window
         }
 
         _app.UpdateNoteBackgroundFromManager(selected, backgroundColor);
-        RebuildTiles(BuildNoteKey(selected));
-        RefreshSelectionUi();
     }
 
     private void DeleteNoteButton_Click(object sender, RoutedEventArgs e)
@@ -696,8 +780,6 @@ public partial class MainWindow : Window
         }
 
         _app.DeleteNote(selected);
-        RebuildTiles(BuildNoteKey(selected));
-        RefreshSelectionUi();
     }
 
     private void RestoreBackupButton_Click(object sender, RoutedEventArgs e)
@@ -707,14 +789,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        NoteDocument? restored = _app.RestoreBackupNote(selected);
-        if (restored is null)
-        {
-            return;
-        }
-
-        RebuildTiles(BuildNoteKey(restored));
-        RefreshSelectionUi();
+        _app.RestoreBackupNote(selected);
     }
 
     private void DeleteBackupPermanentlyButton_Click(object sender, RoutedEventArgs e)
@@ -736,8 +811,6 @@ public partial class MainWindow : Window
         }
 
         _app.PermanentlyDeleteBackupNote(selected);
-        RebuildTiles(selectKey: null);
-        RefreshSelectionUi();
     }
 
     private void EmptyTrashButton_Click(object? sender, RoutedEventArgs e)
@@ -759,8 +832,6 @@ public partial class MainWindow : Window
         }
 
         _app.EmptyTrash();
-        RebuildTiles(selectKey: null);
-        RefreshSelectionUi();
     }
 
     private void GlobalFontSetting_Changed(object sender, SelectionChangedEventArgs e)
@@ -770,7 +841,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        ApplyGlobalSettingsFromUi();
+        ScheduleGlobalSettingsApply();
     }
 
     private void CornerRadiusSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -782,7 +853,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        ApplyGlobalSettingsFromUi();
+        ScheduleGlobalSettingsApply();
+    }
+
+    private void ScheduleGlobalSettingsApply()
+    {
+        _settingsApplyTimer.Stop();
+        _settingsApplyTimer.Start();
     }
 
     private void ApplyGlobalSettingsFromUi()
@@ -849,7 +926,7 @@ public partial class MainWindow : Window
             return string.Join(Environment.NewLine, todoLines);
         }
 
-        string normalized = note.Content.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
+        string normalized = StripStickyMarkup(note.Content).Replace("\r\n", "\n").Replace('\r', '\n').Trim();
         string[] lines = normalized
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(line => line.Trim())
@@ -870,7 +947,7 @@ public partial class MainWindow : Window
         string normalized = note.Content.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
         if (note.Kind != NoteKind.Todo)
         {
-            return normalized;
+            return StripStickyMarkup(normalized);
         }
 
         string[] todoLines = normalized
@@ -890,6 +967,21 @@ public partial class MainWindow : Window
             .ToArray();
 
         return string.Join(Environment.NewLine, todoLines);
+    }
+
+    private static string StripStickyMarkup(string content)
+    {
+        return content
+            .Replace("<l>", "• ", StringComparison.Ordinal)
+            .Replace("</l>", string.Empty, StringComparison.Ordinal)
+            .Replace("<b>", string.Empty, StringComparison.Ordinal)
+            .Replace("</b>", string.Empty, StringComparison.Ordinal)
+            .Replace("<i>", string.Empty, StringComparison.Ordinal)
+            .Replace("</i>", string.Empty, StringComparison.Ordinal)
+            .Replace("<u>", string.Empty, StringComparison.Ordinal)
+            .Replace("</u>", string.Empty, StringComparison.Ordinal)
+            .Replace("<s>", string.Empty, StringComparison.Ordinal)
+            .Replace("</s>", string.Empty, StringComparison.Ordinal);
     }
 
     private void BuildSelectedBackgroundPresetButtons()
@@ -1000,7 +1092,7 @@ public partial class MainWindow : Window
         }
 
         SetHiddenNoteDarknessPresetSelection(factor);
-        ApplyGlobalSettingsFromUi();
+        ScheduleGlobalSettingsApply();
     }
 
     private double GetSelectedHiddenNoteDarknessFactor()
@@ -1199,6 +1291,7 @@ public partial class MainWindow : Window
         }
 
         _noteSortMode = sortMode;
+        ResetTileLimits();
         UpdateSortModeButtons();
         RebuildTiles(_selectedTileKey);
         RefreshSelectionUi();
@@ -1219,6 +1312,7 @@ public partial class MainWindow : Window
         }
 
         _noteFilterMode = filterMode;
+        ResetTileLimits();
         UpdateFilterButtons();
         RebuildTiles(_selectedTileKey);
         RefreshSelectionUi();

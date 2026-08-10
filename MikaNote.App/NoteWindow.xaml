@@ -51,7 +51,7 @@
                                Height="*" />
             </Grid.RowDefinitions>
 
-            <Popup x:Name="ActionPopup"
+            <!--<Popup x:Name="ActionPopup"
                    Placement="Custom"
                    PlacementTarget="{Binding ElementName=RootBorder}"
                    CustomPopupPlacementCallback="ActionPopup_CustomPopupPlacement"
@@ -196,9 +196,9 @@
                                 Click="CloseButton_Click" />
                     </Grid>
                 </Border>
-            </Popup>
+            </Popup>-->
 
-            <Popup x:Name="SettingsPopup"
+            <!--<Popup x:Name="SettingsPopup"
                    Placement="Custom"
                    PlacementTarget="{Binding ElementName=RootBorder}"
                    CustomPopupPlacementCallback="SettingsPopup_CustomPopupPlacement"
@@ -444,7 +444,7 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
-            </Popup>
+            </Popup>-->
 
             <Grid x:Name="TitleAreaRoot"
                   Grid.Row="0"

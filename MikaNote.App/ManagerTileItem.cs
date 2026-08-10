@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using MediaBrush = System.Windows.Media.Brush;
 using MediaBrushes = System.Windows.Media.Brushes;
@@ -9,15 +10,35 @@ public enum ManagerTileActionKind
     None,
     CreateSticky,
     CreateTodo,
+    ShowMoreTodos,
+    ShowMoreMemos,
+    ShowMoreTrash,
     EmptyTrash
 }
 
-public sealed class ManagerTileItem
+public sealed class ManagerTileItem : INotifyPropertyChanged
 {
+    private bool _isSelected;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
     public string Key { get; init; } = string.Empty;
     public NoteDocument? Note { get; init; }
     public ManagerTileActionKind ActionKind { get; init; }
-    public bool IsSelected { get; init; }
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+            {
+                return;
+            }
+
+            _isSelected = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+        }
+    }
     public bool IsAction => ActionKind != ManagerTileActionKind.None;
     public bool IsBackup { get; init; }
     public string Title { get; init; } = string.Empty;

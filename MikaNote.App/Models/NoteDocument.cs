@@ -15,6 +15,7 @@ public sealed class NoteDocument
     public bool IsBackup { get; set; }
     public bool IsHidden { get; set; }
     public bool IsFavorite { get; set; }
+    public bool IsContentCollapsed { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset ModifiedAt { get; set; }
     public double Left { get; set; }

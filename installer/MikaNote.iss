@@ -1,5 +1,5 @@
 #define MyAppName "MikaNote"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.1.0"
 #define MyAppPublisher "MikaNote"
 #define MyAppExeName "MikaNote.App.exe"
 #define MyAppId "{{6C041A2E-553D-4B06-A41A-5C02C9C3E7B4}}"
@@ -22,7 +22,7 @@ WizardStyle=modern
 SetupIconFile=..\MikaNote.App\Assets\MikaIcon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 OutputDir=Output
-OutputBaseFilename=MikaNote-Setup-v2.0.0
+OutputBaseFilename=MikaNote-Setup-v2.1
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
