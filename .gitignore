@@ -1,0 +1,8 @@
+# .NET build outputs
+/MikaNote.App/bin/
+/MikaNote.App/obj/
+
+# Local publish and installer outputs
+/artifacts/
+/installer/publish/
+/installer/Output/
